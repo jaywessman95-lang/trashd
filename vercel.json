@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/scrape",
+      "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/cron/instant-alerts",
+      "schedule": "30 14 * * *"
+    }
+  ]
+}

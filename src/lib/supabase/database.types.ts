@@ -1,0 +1,156 @@
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+
+export type Database = {
+  public: {
+    Tables: {
+      leads: {
+        Row: {
+          id: string;
+          raw_listing_id: string | null;
+          source: string;
+          title: string;
+          description: string | null;
+          city: string | null;
+          state: string | null;
+          url: string;
+          price: string | null;
+          image_count: number;
+          event_start: string | null;
+          event_end: string | null;
+          posted_at: string | null;
+          score: number;
+          priority: string;
+          job_size: string;
+          lead_type: string;
+          ai_reason: string | null;
+          scoring_version: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["leads"]["Row"]> & {
+          source: string;
+          title: string;
+          url: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["leads"]["Row"]>;
+        Relationships: [];
+      };
+      raw_listings: {
+        Row: {
+          id: string;
+          source: string;
+          source_listing_id: string | null;
+          url: string;
+          raw_data: Json;
+          content_hash: string | null;
+          scrape_run_id: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["raw_listings"]["Row"]> & {
+          source: string;
+          url: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["raw_listings"]["Row"]>;
+        Relationships: [];
+      };
+      scrape_runs: {
+        Row: {
+          id: string;
+          source: string;
+          status: string;
+          started_at: string;
+          finished_at: string | null;
+          listings_found: number;
+          error_message: string | null;
+        };
+        Insert: Partial<Database["public"]["Tables"]["scrape_runs"]["Row"]> & {
+          source: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["scrape_runs"]["Row"]>;
+        Relationships: [];
+      };
+      user_settings: {
+        Row: {
+          user_id: string;
+          cities: string[];
+          radius: number;
+          min_score: number;
+          min_job_size: string;
+          enabled_sources: string[];
+          urgency_preference: string;
+          lead_types: string[];
+          included_keywords: string[];
+          excluded_keywords: string[];
+          max_leads_per_day: number;
+          instant_alert_threshold: number;
+          hide_duplicates: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["user_settings"]["Row"]> & {
+          user_id: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["user_settings"]["Row"]>;
+        Relationships: [];
+      };
+      lead_actions: {
+        Row: {
+          id: string;
+          user_id: string;
+          lead_id: string;
+          contacted: boolean;
+          booked: boolean;
+          dismissed: boolean;
+          not_a_fit: boolean;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["lead_actions"]["Row"]> & {
+          user_id: string;
+          lead_id: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["lead_actions"]["Row"]>;
+        Relationships: [];
+      };
+      subscriptions: {
+        Row: {
+          user_id: string;
+          stripe_customer_id: string | null;
+          stripe_subscription_id: string | null;
+          plan: string;
+          status: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["subscriptions"]["Row"]> & {
+          user_id: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["subscriptions"]["Row"]>;
+        Relationships: [];
+      };
+      alerts: {
+        Row: {
+          id: string;
+          user_id: string;
+          lead_id: string | null;
+          alert_type: string;
+          status: string;
+          subject: string | null;
+          body: string | null;
+          sent_at: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["alerts"]["Row"]> & {
+          user_id: string;
+          alert_type: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["alerts"]["Row"]>;
+        Relationships: [];
+      };
+    };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
+  };
+};
