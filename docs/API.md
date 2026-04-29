@@ -67,7 +67,7 @@ Runs the selected source connector through Zyte, extracts normalized candidates,
 
 `GET /api/cron/scrape`
 
-Runs the scheduled Craigslist MVP scrape. Requires:
+Runs the scheduled scrape across enabled sources. Supabase Cron calls this hourly, and the route skips runs outside 6am-9pm PT. Requires:
 
 ```text
 Authorization: Bearer $CRON_SECRET
@@ -77,7 +77,7 @@ Authorization: Bearer $CRON_SECRET
 
 `GET /api/cron/instant-alerts`
 
-Finds recent hot leads that match user settings and sends Gmail alerts. Requires:
+Finds recent hot leads that match user settings and sends Gmail alerts. Supabase Cron calls this hourly at minute 30. Requires:
 
 ```text
 Authorization: Bearer $CRON_SECRET

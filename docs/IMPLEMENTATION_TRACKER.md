@@ -18,7 +18,7 @@
 - [x] Duplicate detection key helper.
 - [x] Infermatic scoring boundary with fallback scoring.
 - [x] Lead dashboard scaffold.
-- [x] Vercel cron route for scheduled Craigslist ingestion.
+- [x] Supabase Cron route for scheduled hourly ingestion.
 
 ## Phase 3: Alerts and Actions
 
@@ -51,7 +51,7 @@
 
 - [x] Vercel project linked.
 - [x] Vercel production deployment.
-- [ ] Upgrade Vercel to Pro for every-4-hours scraping and hourly instant alerts. Hobby cron is daily only.
+- [x] Use Supabase Cron for hourly scraping and hourly instant alerts while keeping Vercel on Hobby.
 
 ## Latest End-To-End Test
 

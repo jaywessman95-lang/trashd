@@ -7,7 +7,7 @@ export default function LoginPage() {
     <AppShell navItems={[{ href: "/signup", label: "Signup" }]}>
       <section className="container hero compact-hero">
         <h1>Log in</h1>
-        <p>Open the lead dashboard, settings, alerts, and billing for your junk removal territory.</p>
+        <p>Open the lead dashboard, settings, and alerts for your junk removal territory.</p>
       </section>
       <section className="container auth-layout">
         <AuthForm mode="login" />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { SCRAPE_COVERAGE_PRESETS } from "@/lib/config/scrape-coverage";
 import { SOURCES } from "@/lib/config/sources";
 
 export function SettingsForm() {
@@ -28,6 +29,10 @@ export function SettingsForm() {
         .map((keyword) => keyword.trim())
         .filter(Boolean),
       maxLeadsPerDay: Number(formData.get("maxLeadsPerDay") ?? 50),
+      scrapeCoverage: String(formData.get("scrapeCoverage") ?? "standard"),
+      maxListingsPerSource: parseOptionalNumber(formData.get("maxListingsPerSource")),
+      maxPagesPerSource: parseOptionalNumber(formData.get("maxPagesPerSource")),
+      lookbackHours: parseOptionalNumber(formData.get("lookbackHours")),
       instantAlertThreshold: Number(formData.get("instantAlertThreshold") ?? 90),
       hideDuplicates: formData.get("hideDuplicates") === "on"
     };
@@ -93,6 +98,63 @@ export function SettingsForm() {
         </div>
       </section>
 
+      <section className="card form-panel scrape-panel">
+        <div className="section-title-with-info">
+          <h2>Scrape Coverage</h2>
+          <InfoTip text="Controls how broadly Trashd checks each website. More coverage can find more jobs, but it may also pull in more low-quality listings to review." />
+        </div>
+        <label>
+          <span className="label-with-info">
+            Searches per day
+            <InfoTip text="Controls how many listings Trashd collects across all runs each day. Use Standard for normal daily lead flow, or Deep/Maximum for high-volume markets." />
+          </span>
+          <select defaultValue="standard" name="scrapeCoverage">
+            {SCRAPE_COVERAGE_PRESETS.map((preset) => (
+              <option key={preset.id} value={preset.id}>
+                {preset.label} - {preset.maxListingsPerSource} listings
+              </option>
+            ))}
+          </select>
+        </label>
+        <details className="advanced-settings">
+          <summary className="advanced-settings-toggle">Advanced Settings</summary>
+          <div className="coverage-summary" aria-label="Coverage presets">
+            {SCRAPE_COVERAGE_PRESETS.map((preset) => (
+              <div key={preset.id}>
+                <strong>{preset.label}</strong>
+                <span>{preset.description}</span>
+                <small>
+                  {preset.maxPagesPerSource} pages, {preset.lookbackHours}h max age
+                </small>
+              </div>
+            ))}
+          </div>
+          <div className="advanced-grid advanced-grid-border-top">
+            <label>
+              <span className="label-with-info">
+                Max listings
+                <InfoTip text="The most listings Trashd will inspect from each website per day. Higher numbers can uncover more jobs from busy sites like Craigslist." />
+              </span>
+              <input max="1000" min="1" name="maxListingsPerSource" placeholder="Preset" type="number" />
+            </label>
+            <label>
+              <span className="label-with-info">
+                Max pages
+                <InfoTip text="How many result pages Trashd can open per website. More pages helps in crowded markets, but the first pages usually contain the freshest leads." />
+              </span>
+              <input max="25" min="1" name="maxPagesPerSource" placeholder="Preset" type="number" />
+            </label>
+            <label>
+              <span className="label-with-info">
+                Maximum listing age
+                <InfoTip text="How old a listing can be, in hours. Lower values focus on fresh leads before competitors contact them; higher values can catch older estate or auction jobs." />
+              </span>
+              <input max="720" min="1" name="lookbackHours" placeholder="Preset hours" type="number" />
+            </label>
+          </div>
+        </details>
+      </section>
+
       <section className="card form-panel">
         <h2>Alerts</h2>
         <label>
@@ -136,5 +198,19 @@ export function SettingsForm() {
         {status ? <span className="action-status">{status}</span> : null}
       </div>
     </form>
+  );
+}
+
+function parseOptionalNumber(value: FormDataEntryValue | null) {
+  const parsed = Number(value);
+  return value === null || value === "" || Number.isNaN(parsed) ? null : parsed;
+}
+
+function InfoTip({ text }: { text: string }) {
+  return (
+    <details className="info-tip">
+      <summary aria-label="More information">i</summary>
+      <span>{text}</span>
+    </details>
   );
 }

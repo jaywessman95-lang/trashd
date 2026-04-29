@@ -7,7 +7,12 @@ const sourceSchema = z.enum(["craigslist", "offerup", "estatesales_net", "storag
 export function GET(request: Request) {
   const url = new URL(request.url);
   const source = sourceSchema.parse(url.searchParams.get("source") ?? "craigslist");
-  const cities = url.searchParams.get("cities")?.split(",").filter(Boolean) ?? ["Anaheim", "Irvine", "Santa Ana"];
+  const cities =
+    url.searchParams
+      .get("cities")
+      ?.split(",")
+      .map((city) => city.trim())
+      .filter(Boolean) ?? ["Anaheim", "Irvine", "Santa Ana"];
   const radiusMiles = Number(url.searchParams.get("radius") ?? "25");
   const seedUrls = connectors[source].buildSeedUrls({ cities, radiusMiles });
 

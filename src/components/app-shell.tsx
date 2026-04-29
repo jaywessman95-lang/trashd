@@ -8,8 +8,7 @@ type NavItem = {
 const defaultNavItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/leads", label: "Leads" },
-  { href: "/settings", label: "Settings" },
-  { href: "/billing", label: "Billing" }
+  { href: "/settings", label: "Settings" }
 ];
 
 type AppShellProps = {
@@ -18,6 +17,8 @@ type AppShellProps = {
 };
 
 export function AppShell({ children, navItems = defaultNavItems }: AppShellProps) {
+  const showAccountLink = navItems === defaultNavItems;
+
   return (
     <main className="page-shell">
       <header className="topbar">
@@ -25,13 +26,20 @@ export function AppShell({ children, navItems = defaultNavItems }: AppShellProps
           <Link className="brand" href="/">
             Trashd
           </Link>
-          <nav className="nav" aria-label="Primary navigation">
-            {navItems.map((item) => (
-              <Link href={item.href} key={item.href}>
-                {item.label}
+          <div className="topbar-menu">
+            <nav className="nav" aria-label="Primary navigation">
+              {navItems.map((item) => (
+                <Link className="nav-link" href={item.href} key={item.href}>
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+            {showAccountLink ? (
+              <Link className="nav-link account-link" href="/account">
+                Account
               </Link>
-            ))}
-          </nav>
+            ) : null}
+          </div>
         </div>
       </header>
       {children}

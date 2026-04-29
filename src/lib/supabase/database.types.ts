@@ -81,6 +81,10 @@ export type Database = {
           included_keywords: string[];
           excluded_keywords: string[];
           max_leads_per_day: number;
+          scrape_coverage: string;
+          max_listings_per_source: number | null;
+          max_pages_per_source: number | null;
+          lookback_hours: number | null;
           instant_alert_threshold: number;
           hide_duplicates: boolean;
           created_at: string;

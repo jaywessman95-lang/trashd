@@ -52,6 +52,20 @@ export async function sendInstantHotLeadAlerts(): Promise<InstantAlertResult> {
         continue;
       }
 
+      const { data: existingAlert, error: existingAlertError } = await supabase
+        .from("alerts")
+        .select("id")
+        .eq("user_id", setting.user_id)
+        .eq("lead_id", lead.id)
+        .eq("alert_type", "instant_hot_lead")
+        .limit(1)
+        .maybeSingle();
+
+      if (existingAlertError) throw existingAlertError;
+      if (existingAlert) {
+        continue;
+      }
+
       const subject = `HOT Lead Score ${lead.score}`;
       const text = [
         `${lead.source} - ${lead.city ?? "Unknown city"}`,

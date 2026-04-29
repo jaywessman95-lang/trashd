@@ -39,6 +39,7 @@ export async function runSourceScrape(input: ScrapeRunInput): Promise<ScrapeRunR
     .slice(0, input.maxSeedUrls ?? 3);
   const scored: ScoredCandidate[] = [];
   const fetchedUrls: string[] = [];
+  const seenCandidateUrls = new Set<string>();
   const shouldPersist = Boolean(input.persist && env.NEXT_PUBLIC_SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY);
   const scrapeRunId = shouldPersist ? await startScrapeRun(input.source) : undefined;
   const maxCandidates = input.maxCandidates ?? 100;
@@ -46,7 +47,9 @@ export async function runSourceScrape(input: ScrapeRunInput): Promise<ScrapeRunR
 
   try {
     for (const seedUrl of seedUrls) {
-      const page = await fetchWithZyte({ url: seedUrl, render: connector.render ?? true });
+      const page = connector.fetch
+        ? await connector.fetch(seedUrl)
+        : await fetchWithZyte({ url: seedUrl, render: connector.render ?? true });
       fetchedUrls.push(page.url);
       const remainingCandidateSlots = maxCandidates - scored.length;
 
@@ -54,7 +57,16 @@ export async function runSourceScrape(input: ScrapeRunInput): Promise<ScrapeRunR
         break;
       }
 
-      const candidates = normalizeCandidates(await connector.extract(page.html, page.url)).slice(0, Math.min(remainingCandidateSlots, maxCandidatesPerSeed));
+      const candidates = normalizeCandidates(await connector.extract(page.html, page.url))
+        .filter((candidate) => {
+          if (seenCandidateUrls.has(candidate.url)) {
+            return false;
+          }
+
+          seenCandidateUrls.add(candidate.url);
+          return true;
+        })
+        .slice(0, Math.min(remainingCandidateSlots, maxCandidatesPerSeed));
 
       for (const candidate of candidates) {
         const score = await scoreLeadWithInfermatic(candidate);

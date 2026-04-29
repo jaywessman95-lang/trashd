@@ -42,6 +42,7 @@ The build will require third-party setup at these points:
 - Gmail/Google Cloud: create OAuth credentials and refresh token for alerts with Gmail send scope.
 - Google sign-in: enable Google provider in Supabase Auth and add the Supabase callback URL to the Google OAuth client.
 - Vercel: connect GitHub repo and add environment variables.
+- Supabase Cron: store the live app URL and cron token in Vault, then apply the cron migration.
 
 When a platform requires a browser login, keep that session in the browser. When an API key is created, put it in `.env.local` for local dev and Vercel environment variables for production.
 
@@ -62,3 +63,17 @@ The production app origin should be included as an authorized JavaScript origin:
 ```text
 https://trashd.vercel.app
 ```
+
+## Supabase Cron Vault Secrets
+
+Before applying the hourly cron migration, create these Vault secrets in Supabase SQL editor:
+
+```sql
+select vault.create_secret('https://trashd.vercel.app', 'trashd_app_url');
+select vault.create_secret('same-value-as-vercel-cron-secret', 'trashd_cron_secret');
+```
+
+The migration schedules:
+
+- `/api/cron/scrape` hourly at minute `0`
+- `/api/cron/instant-alerts` hourly at minute `30`

@@ -3,6 +3,8 @@ import { DashboardStat } from "@/components/dashboard-stat";
 import { LeadCard } from "@/components/lead-card";
 import { getLeadStats, listLeads } from "@/lib/leads/repository";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
   const [stats, leads] = await Promise.all([getLeadStats(), listLeads({ limit: 6 })]);
 

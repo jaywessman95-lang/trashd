@@ -14,12 +14,12 @@
 
 | Source | Schedule |
 |---|---|
-| Craigslist | Every 2-4 hours |
-| OfferUp | Every 4-8 hours |
-| EstateSales.net | Every 8 hours |
-| EstateSales.org | Every 8-12 hours |
-| AuctionZip | Every 8-12 hours |
-| StorageTreasures | Every 8 hours |
+| Craigslist | Hourly |
+| OfferUp | Hourly |
+| EstateSales.net | Hourly |
+| EstateSales.org | Hourly |
+| AuctionZip | Hourly |
+| StorageTreasures | Hourly |
 | MovingSales aggregators | Daily |
 
 ## Connector Contract

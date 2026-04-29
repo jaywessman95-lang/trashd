@@ -43,6 +43,10 @@ export async function PUT(request: Request) {
         included_keywords: input.includedKeywords,
         excluded_keywords: input.excludedKeywords,
         max_leads_per_day: input.maxLeadsPerDay,
+        scrape_coverage: input.scrapeCoverage,
+        max_listings_per_source: input.maxListingsPerSource,
+        max_pages_per_source: input.maxPagesPerSource,
+        lookback_hours: input.lookbackHours,
         instant_alert_threshold: input.instantAlertThreshold,
         hide_duplicates: input.hideDuplicates,
         updated_at: new Date().toISOString()

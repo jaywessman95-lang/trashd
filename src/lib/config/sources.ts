@@ -14,49 +14,49 @@ export const SOURCES: SourceConfig[] = [
     label: "Craigslist",
     rank: 1,
     confidenceBoost: 10,
-    defaultSchedule: "every 2-4 hours"
+    defaultSchedule: "hourly"
   },
   {
     id: "offerup",
     label: "OfferUp",
     rank: 2,
     confidenceBoost: 15,
-    defaultSchedule: "every 4-8 hours"
+    defaultSchedule: "hourly"
   },
   {
     id: "estatesales_net",
     label: "EstateSales.net",
     rank: 3,
     confidenceBoost: 20,
-    defaultSchedule: "every 8 hours"
+    defaultSchedule: "hourly"
   },
   {
     id: "storagetreasures",
     label: "StorageTreasures",
     rank: 4,
     confidenceBoost: 25,
-    defaultSchedule: "every 8 hours"
+    defaultSchedule: "hourly"
   },
   {
     id: "auctionzip",
     label: "AuctionZip",
     rank: 5,
     confidenceBoost: 20,
-    defaultSchedule: "every 8-12 hours"
+    defaultSchedule: "hourly"
   },
   {
     id: "estatesales_org",
     label: "EstateSales.org",
     rank: 6,
     confidenceBoost: 18,
-    defaultSchedule: "every 8-12 hours"
+    defaultSchedule: "hourly"
   },
   {
     id: "movingsales",
     label: "MovingSales / Aggregators",
     rank: 7,
     confidenceBoost: 15,
-    defaultSchedule: "daily"
+    defaultSchedule: "hourly"
   }
 ];
 
