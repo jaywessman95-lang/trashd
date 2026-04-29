@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { DisplayLead } from "@/lib/sample-data";
 
-type SortKey = "title" | "city" | "score" | "priority" | "jobSize" | "leadType" | "price" | "imageCount" | "eventEnd" | "firstSeenAt";
+type SortKey = "title" | "city" | "score" | "priority" | "jobSize" | "leadType" | "price" | "imageCount" | "eventEnd" | "firstSeenAt" | "age";
 type SortDir = "asc" | "desc";
 
 type LeadTableProps = {
@@ -54,6 +54,9 @@ function sortLeads(leads: DisplayLead[], key: SortKey, dir: SortDir): DisplayLea
         cmp = dateVal(a.eventEnd) - dateVal(b.eventEnd);
         break;
       case "firstSeenAt":
+        cmp = dateVal(a.firstSeenAt) - dateVal(b.firstSeenAt);
+        break;
+      case "age":
         cmp = dateVal(a.firstSeenAt) - dateVal(b.firstSeenAt);
         break;
     }
@@ -124,6 +127,7 @@ export function LeadTable({ leads }: LeadTableProps) {
             <SortHeader active={sortKey === "imageCount"} col="imageCount" onSort={handleSort} sortDir={sortDir}>Photos</SortHeader>
             <SortHeader active={sortKey === "eventEnd"} col="eventEnd" onSort={handleSort} sortDir={sortDir}>Ends</SortHeader>
             <SortHeader active={sortKey === "firstSeenAt"} col="firstSeenAt" onSort={handleSort} sortDir={sortDir}>Found</SortHeader>
+            <SortHeader active={sortKey === "age"} col="age" onSort={handleSort} sortDir={sortDir}>Age</SortHeader>
             <th></th>
           </tr>
         </thead>
@@ -152,6 +156,7 @@ export function LeadTable({ leads }: LeadTableProps) {
               <td className="lead-table-meta">{lead.imageCount || "—"}</td>
               <td className="lead-table-meta">{lead.eventEnd ? formatDate(lead.eventEnd) : "—"}</td>
               <td className="lead-table-meta">{lead.firstSeenAt ? formatDate(lead.firstSeenAt) : "—"}</td>
+              <td><span className={`lead-age-badge ${ageClass(lead.firstSeenAt)}`}>{leadAge(lead.firstSeenAt)}</span></td>
               <td>
                 <a className="small-button lead-table-action" href={lead.url} rel="noreferrer" target="_blank">
                   View
@@ -161,7 +166,7 @@ export function LeadTable({ leads }: LeadTableProps) {
           ))}
           {!leads.length ? (
             <tr>
-              <td className="lead-table-empty" colSpan={12}>No leads match these filters.</td>
+              <td className="lead-table-empty" colSpan={13}>No leads match these filters.</td>
             </tr>
           ) : null}
         </tbody>
@@ -205,6 +210,28 @@ function scoreClass(score: number): string {
 
 function formatTitle(value: string) {
   return value.replaceAll("_", " ").replace(/\b\w/g, (l) => l.toUpperCase());
+}
+
+function leadAge(value: string | undefined): string {
+  if (!value) return "—";
+  const ms = Date.now() - Date.parse(value);
+  if (Number.isNaN(ms) || ms < 0) return "—";
+  const minutes = Math.floor(ms / 60000);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(ms / 3600000);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(ms / 86400000);
+  return `${days}d`;
+}
+
+function ageClass(value: string | undefined): string {
+  if (!value) return "age-unknown";
+  const hours = (Date.now() - Date.parse(value)) / 3600000;
+  if (Number.isNaN(hours) || hours < 0) return "age-unknown";
+  if (hours < 6) return "age-fresh";
+  if (hours < 24) return "age-recent";
+  if (hours < 72) return "age-aging";
+  return "age-stale";
 }
 
 function formatDate(value: string) {

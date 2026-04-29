@@ -912,6 +912,42 @@ button:disabled {
   overflow: hidden;
 }
 
+.lead-age-badge {
+  display: inline-block;
+  min-width: 36px;
+  padding: 2px 7px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
+.lead-age-badge.age-fresh {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.lead-age-badge.age-recent {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.lead-age-badge.age-aging {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.lead-age-badge.age-stale {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.lead-age-badge.age-unknown {
+  background: #f1f5f9;
+  color: #94a3b8;
+}
+
 .lead-table-action {
   min-height: 32px;
   padding: 0 12px;
