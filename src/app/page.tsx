@@ -1,6 +1,18 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
+import { countActiveFilters, LeadFilterPanel, type LeadFilters } from "@/components/lead-filter-panel";
+import { LeadTable } from "@/components/lead-table";
 import { TestimonialSlider } from "@/components/testimonial-slider";
+import { env } from "@/lib/env";
+import { listLeads } from "@/lib/leads/repository";
+import type { DisplayLead } from "@/lib/sample-data";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import type { Database } from "@/lib/supabase/database.types";
+import type { SourceId } from "@/lib/types";
+
+export const dynamic = "force-dynamic";
+
+type UserSettingsRow = Database["public"]["Tables"]["user_settings"]["Row"];
 
 const STATS = [
   { value: "7", label: "Platforms scanned" },
@@ -114,7 +126,10 @@ const LEAD_TYPES = [
   { label: "Free Bulk Pickup", color: "#dc2626", bg: "#fff1f2", icon: "♻️" }
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const { filters: conexerFilters, leads: conexerLeads } = await getConexerLeadTable();
+  const activeConexerFilterCount = countActiveFilters(conexerFilters);
+
   return (
     <AppShell>
 
@@ -198,6 +213,20 @@ export default function HomePage() {
         </div>
       </div>
 
+      <section className="home-live-leads">
+        <div className="container">
+          <div className="home-section-label">Live operator view</div>
+          <h2 className="home-h2">Conexer&apos;s Lead Filters and Table</h2>
+        </div>
+        <LeadFilterPanel
+          action="/leads"
+          activeFilterCount={activeConexerFilterCount}
+          filters={conexerFilters}
+          leadCount={conexerLeads.length}
+        />
+        <LeadTable leads={conexerLeads} />
+      </section>
+
       {/* ── Lead types ── */}
       <section className="home-leadtypes">
         <div className="container">
@@ -272,4 +301,64 @@ export default function HomePage() {
 
     </AppShell>
   );
+}
+
+async function getConexerLeadTable(): Promise<{ filters: LeadFilters; leads: DisplayLead[] }> {
+  const settings = await getConexerSettings();
+  const filters: LeadFilters = {
+    limit: 50,
+    minScore: settings?.min_score ?? 80,
+    sort: "score"
+  };
+  const leads = await listLeads(filters);
+  const enabledSources = new Set(settings?.enabled_sources as SourceId[] | undefined);
+  const enabledCities = new Set(settings?.cities.map((city) => city.toLowerCase()));
+  const scopedLeads = leads.filter((lead) => {
+    if (enabledSources.size && !enabledSources.has(lead.source)) {
+      return false;
+    }
+
+    if (enabledCities.size && lead.city && !enabledCities.has(lead.city.toLowerCase())) {
+      return false;
+    }
+
+    if (settings?.lead_types.length && !settings.lead_types.includes(lead.leadType)) {
+      return false;
+    }
+
+    return true;
+  });
+
+  return { filters, leads: scopedLeads };
+}
+
+async function getConexerSettings(): Promise<UserSettingsRow | null> {
+  if (!env.NEXT_PUBLIC_SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return null;
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const users = await supabase.auth.admin.listUsers();
+
+  if (users.error) {
+    return null;
+  }
+
+  const user = users.data.users.find((item) => item.email?.toLowerCase() === "conexer@gmail.com");
+
+  if (!user) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("user_settings")
+    .select("*")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (error) {
+    return null;
+  }
+
+  return data;
 }

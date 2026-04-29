@@ -1316,6 +1316,16 @@ button:disabled {
   background: var(--background);
 }
 
+.home-live-leads {
+  padding: 88px 0;
+  background: #ffffff;
+}
+
+.home-live-leads .lead-filter-panel,
+.home-live-leads .lead-table-wrap {
+  margin-top: 28px;
+}
+
 .home-leadtypes-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
