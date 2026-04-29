@@ -216,7 +216,7 @@ export default async function HomePage() {
       <section className="home-live-leads">
         <div className="container">
           <div className="home-section-label">Live operator view</div>
-          <h2 className="home-h2">Live Lead Filters and Result</h2>
+          <h2 className="home-h2">Live Lead Filters and Results</h2>
         </div>
         <LeadFilterPanel
           action="/leads"
