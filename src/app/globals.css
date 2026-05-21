@@ -131,20 +131,6 @@ button:disabled {
   color: var(--foreground);
 }
 
-.account-link {
-  margin-left: auto;
-  border: 1px solid var(--border);
-  background: #ffffff;
-  color: var(--foreground);
-  box-shadow: var(--shadow-sm);
-}
-
-.account-link:hover {
-  border-color: var(--primary);
-  background: var(--primary-soft);
-  color: var(--primary-hover);
-}
-
 .hero {
   display: grid;
   gap: 22px;
@@ -207,6 +193,12 @@ button:disabled {
 
 .button:active {
   transform: translateY(0);
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+  transform: none;
 }
 
 .button.secondary {
@@ -677,7 +669,16 @@ button:disabled {
 .filter-summary-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 14px;
+}
+
+.filter-control-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .filter-summary,
@@ -693,6 +694,79 @@ button:disabled {
   padding: 20px 0 80px;
 }
 
+/* ── Tab Navigation ── */
+
+.tab-nav-section {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.tab-nav {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 0;
+}
+
+.tab-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 22px;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 800;
+  text-decoration: none;
+  transition: color 0.18s ease, border-color 0.18s ease;
+}
+
+.tab-link:hover {
+  color: var(--foreground);
+  border-color: var(--border);
+}
+
+.tab-link-active {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+/* ── Sold Home Cards ── */
+
+.sold-home-card {
+  display: grid;
+  gap: 14px;
+}
+
+.sold-home-price {
+  color: var(--foreground);
+  font-size: 22px;
+  font-weight: 850;
+}
+
+.priority-badge {
+  font-weight: 850 !important;
+}
+
+.priority-hot_now {
+  background: #fff1f2 !important;
+  border-color: rgba(220, 38, 38, 0.22) !important;
+  color: #b91c1c !important;
+}
+
+.priority-strong {
+  background: #fefce8 !important;
+  border-color: rgba(202, 138, 4, 0.22) !important;
+  color: #a16207 !important;
+}
+
+.priority-good {
+  background: var(--primary-soft) !important;
+  border-color: rgba(15, 118, 110, 0.22) !important;
+  color: var(--primary-hover) !important;
+}
+
 /* ── Lead Table ── */
 
 .lead-table-wrap {
@@ -705,7 +779,7 @@ button:disabled {
 }
 
 .lead-table-toolbar {
-  display: flex;
+  display: none;
   justify-content: flex-end;
   padding: 12px 16px;
   border-bottom: 1px solid var(--border);
@@ -786,6 +860,15 @@ button:disabled {
   vertical-align: top;
 }
 
+.lead-table th:nth-child(2),
+.lead-table td:nth-child(2) {
+  width: 68px;
+  min-width: 68px;
+  max-width: 68px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
 .lead-table tbody tr:last-child td {
   border-bottom: 0;
 }
@@ -825,7 +908,9 @@ button:disabled {
 .lead-table-city {
   color: var(--foreground);
   font-weight: 750;
-  min-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .lead-table-score {
@@ -1739,6 +1824,42 @@ button:disabled {
   grid-column: span 2;
 }
 
+.scan-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  background: #ffffff;
+}
+
+.scan-control div {
+  display: grid;
+  gap: 4px;
+}
+
+.scan-control strong {
+  font-size: 15px;
+}
+
+.scan-control span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.scan-control-active {
+  border-color: rgba(15, 118, 110, 0.28);
+  background: rgba(15, 118, 110, 0.06);
+}
+
+.scan-control-paused {
+  border-color: rgba(185, 28, 28, 0.24);
+  background: rgba(254, 242, 242, 0.86);
+}
+
 .coverage-summary {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1961,11 +2082,6 @@ button:disabled {
     width: 100%;
   }
 
-  .account-link {
-    margin-left: 0;
-    text-align: center;
-  }
-
   .account-profile {
     grid-template-columns: 1fr;
   }
@@ -1985,6 +2101,10 @@ button:disabled {
 
   .scrape-panel {
     grid-column: auto;
+  }
+
+  .scan-control {
+    grid-template-columns: 1fr;
   }
 
   .coverage-summary,

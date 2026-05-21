@@ -1,9 +1,14 @@
+import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { LeadCard } from "@/components/lead-card";
 import { countActiveFilters, jobSizes, LeadFilterPanel, leadTypes, priorities } from "@/components/lead-filter-panel";
 import { LeadTable } from "@/components/lead-table";
+import { SettingsForm } from "@/components/settings-form";
+import { SoldHomeCard } from "@/components/sold-home-card";
+import { parseSoldHomeFilters, SoldHomeFilterPanel } from "@/components/sold-home-filter-panel";
 import { SOURCES } from "@/lib/config/sources";
 import { listLeads } from "@/lib/leads/repository";
+import { listSoldHomes } from "@/lib/sold-homes/repository";
 import type { JobSize, LeadPriority, LeadType, SourceId } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -14,10 +19,7 @@ type LeadsPageProps = {
 
 export default async function LeadsPage({ searchParams }: LeadsPageProps) {
   const resolved = await searchParams;
-  const filters = parseLeadFilters(resolved);
-  const leads = await listLeads(filters);
-  const activeFilterCount = countActiveFilters(filters);
-  const isTableView = resolved.view !== "card";
+  const activeTab = resolved.tab === "sold-homes" ? "sold-homes" : "website";
 
   return (
     <AppShell>
@@ -26,7 +28,54 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
         <p>Qualified opportunities will appear here after scraping, normalization, scoring, and user filtering.</p>
       </section>
 
-      <LeadFilterPanel activeFilterCount={activeFilterCount} filters={filters} leadCount={leads.length} />
+      <section className="container tab-nav-section">
+        <nav className="tab-nav" aria-label="Lead tabs">
+          <Link
+            className={`tab-link${activeTab === "website" ? " tab-link-active" : ""}`}
+            href="/leads?tab=website"
+          >
+            Website
+          </Link>
+          <Link
+            className={`tab-link${activeTab === "sold-homes" ? " tab-link-active" : ""}`}
+            href="/leads?tab=sold-homes"
+          >
+            Sold Homes
+          </Link>
+        </nav>
+      </section>
+
+      {activeTab === "website" ? (
+        <WebsiteTab resolved={resolved} />
+      ) : (
+        <SoldHomesTab resolved={resolved} />
+      )}
+    </AppShell>
+  );
+}
+
+async function WebsiteTab({ resolved }: { resolved: Record<string, string | string[] | undefined> }) {
+  const filters = parseLeadFilters(resolved);
+  const leads = await listLeads(filters);
+  const activeFilterCount = countActiveFilters(filters);
+  const isTableView = resolved.view !== "card";
+
+  return (
+    <>
+      <section className="container hero">
+        <h2>Settings</h2>
+        <p>Control territories, score thresholds, sources, urgency, keywords, alert frequency, and lead limits.</p>
+      </section>
+      <section className="container">
+        <SettingsForm />
+      </section>
+
+      <LeadFilterPanel
+        activeFilterCount={activeFilterCount}
+        filters={filters}
+        leadCount={leads.length}
+        showFullscreenButton={isTableView}
+      />
 
       {isTableView ? (
         <LeadTable leads={leads} />
@@ -38,7 +87,25 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
           {!leads.length ? <p className="empty-state">No leads match these filters.</p> : null}
         </section>
       )}
-    </AppShell>
+    </>
+  );
+}
+
+async function SoldHomesTab({ resolved }: { resolved: Record<string, string | string[] | undefined> }) {
+  const filters = parseSoldHomeFilters(resolved);
+  const homes = await listSoldHomes(filters);
+
+  return (
+    <>
+      <SoldHomeFilterPanel filters={filters} homeCount={homes.length} />
+
+      <section className="container grid" aria-label="Sold home list">
+        {homes.map((home) => (
+          <SoldHomeCard key={home.id} home={home} />
+        ))}
+        {!homes.length ? <p className="empty-state">No sold homes match these filters.</p> : null}
+      </section>
+    </>
   );
 }
 
