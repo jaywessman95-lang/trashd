@@ -11,7 +11,7 @@ export function SoldHomeFilterPanel({ filters, homeCount }: SoldHomeFilterPanelP
   return (
     <section className="container lead-filter-panel" aria-label="Sold home filters">
       <form className="lead-filter-form" action="/leads">
-        <input type="hidden" name="tab" value="sold-homes" />
+        <input type="hidden" name="tab" value="realtors-just-sold" />
         <label>
           City
           <input defaultValue={filters.city ?? ""} name="shCity" placeholder="Any city" />
@@ -71,7 +71,7 @@ export function SoldHomeFilterPanel({ filters, homeCount }: SoldHomeFilterPanelP
           <button className="button" type="submit">
             Apply Filters
           </button>
-          <a className="small-button" href="/leads?tab=sold-homes">
+          <a className="small-button" href="/leads?tab=realtors-just-sold">
             Clear
           </a>
         </div>

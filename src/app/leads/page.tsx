@@ -19,7 +19,7 @@ type LeadsPageProps = {
 
 export default async function LeadsPage({ searchParams }: LeadsPageProps) {
   const resolved = await searchParams;
-  const activeTab = resolved.tab === "sold-homes" ? "sold-homes" : "website";
+  const activeTab = resolved.tab === "website" ? "website" : "realtors-just-sold";
 
   return (
     <AppShell>
@@ -31,16 +31,16 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
       <section className="container tab-nav-section">
         <nav className="tab-nav" aria-label="Lead tabs">
           <Link
+            className={`tab-link${activeTab === "realtors-just-sold" ? " tab-link-active" : ""}`}
+            href="/leads?tab=realtors-just-sold"
+          >
+            Realtors Just Sold
+          </Link>
+          <Link
             className={`tab-link${activeTab === "website" ? " tab-link-active" : ""}`}
             href="/leads?tab=website"
           >
             Website
-          </Link>
-          <Link
-            className={`tab-link${activeTab === "sold-homes" ? " tab-link-active" : ""}`}
-            href="/leads?tab=sold-homes"
-          >
-            Sold Homes
           </Link>
         </nav>
       </section>

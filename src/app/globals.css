@@ -703,37 +703,44 @@ button:disabled {
 
 .tab-nav {
   display: flex;
-  gap: 10px;
-  padding: 20px 0;
+  align-items: flex-end;
+  gap: 4px;
+  padding-top: 28px;
+  border-bottom: 2px solid var(--border);
 }
 
 .tab-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
-  padding: 0 28px;
-  border: 2px solid #b8c4d2;
-  border-radius: var(--radius);
-  background: #ffffff;
+  min-height: 46px;
+  padding: 0 26px;
+  border: 2px solid var(--border);
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  background: var(--panel-soft);
   color: var(--muted);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 800;
   text-decoration: none;
-  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+  margin-bottom: -2px;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
 }
 
 .tab-link:hover {
-  border-color: var(--primary);
-  background: var(--primary-soft);
-  color: var(--primary-hover);
+  background: #e2eaf3;
+  color: var(--foreground);
 }
 
 .tab-link-active {
-  border-color: var(--primary);
-  background: var(--primary);
-  color: #ffffff;
-  box-shadow: 0 4px 14px rgba(15, 118, 110, 0.28);
+  border-color: var(--border);
+  border-bottom: 2px solid #ffffff;
+  background: #ffffff;
+  color: var(--primary);
+  position: relative;
+  z-index: 1;
+  padding-top: 4px;
+  min-height: 52px;
 }
 
 /* ── Sold Home Cards ── */
