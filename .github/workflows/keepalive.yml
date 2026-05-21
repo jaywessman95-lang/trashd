@@ -1,0 +1,25 @@
+# Prevents GitHub from auto-disabling scheduled workflows after 60 days of
+# repository inactivity. Runs once a month and re-enables all workflows.
+
+name: Keepalive
+
+on:
+  schedule:
+    - cron: "0 12 1 * *"  # 1st of every month at noon UTC
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    name: Keep scheduled workflows active
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Re-enable scheduled workflows
+        run: |
+          gh workflow enable scrape-realtors.yml
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

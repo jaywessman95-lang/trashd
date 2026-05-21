@@ -8,7 +8,9 @@ export const maxDuration = 300;
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
 
-  if (authHeader !== `Bearer ${env.CRON_SECRET}`) {
+  // Guard: if CRON_SECRET is not configured, reject all requests rather than
+  // letting "Bearer undefined" accidentally bypass auth.
+  if (!env.CRON_SECRET || authHeader !== `Bearer ${env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

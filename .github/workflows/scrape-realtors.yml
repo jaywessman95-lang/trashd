@@ -1,14 +1,21 @@
-# Runs the realtor sold-listing scraper every hour, 6am–8pm Pacific (13:00–03:00 UTC)
-# Free on GitHub Actions — no Vercel Pro required.
-# Requires secret: CRON_SECRET and SITE_URL set in repo Settings → Secrets.
+# Runs the realtor sold-listing scraper every hour, 6am–8pm Pacific.
+#
+# Schedule note: GitHub Actions crons are best-effort, not guaranteed.
+# Delays of 10–30 min are common at busy hours (especially top of the hour).
+# The endpoint also enforces a server-side PT time window as a safety net,
+# so a delayed job that fires at 8:15pm PT is gracefully skipped.
+#
+# Required GitHub repo secrets (Settings → Secrets → Actions):
+#   CRON_SECRET  — must match the CRON_SECRET env var set in Vercel
+#   SITE_URL     — your production URL, e.g. https://trashd.vercel.app
 
 name: Scrape Realtors (Hourly 6am–8pm PT)
 
 on:
   schedule:
-    # Every hour at :00, covering 6am–8pm PDT (13–03 UTC)
-    - cron: "0 13,14,15,16,17,18,19,20,21,22,23,0,1,2,3 * * *"
-  workflow_dispatch:   # allow manual trigger from GitHub UI
+    # 6am–8pm PDT = 13:00–03:00 UTC  (UTC-7 in summer, UTC-8 Nov–Mar shifts window by 1h)
+    - cron: "0 13-23,0-3 * * *"
+  workflow_dispatch:  # manual trigger from GitHub UI for testing
 
 jobs:
   scrape:
@@ -17,13 +24,27 @@ jobs:
     timeout-minutes: 10
 
     steps:
+      - name: Validate required secrets
+        run: |
+          if [ -z "${{ secrets.CRON_SECRET }}" ]; then
+            echo "ERROR: CRON_SECRET secret is not set. Go to repo Settings → Secrets → Actions."
+            exit 1
+          fi
+          if [ -z "${{ secrets.SITE_URL }}" ]; then
+            echo "ERROR: SITE_URL secret is not set. Go to repo Settings → Secrets → Actions."
+            exit 1
+          fi
+
       - name: Trigger scrape endpoint
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             "${{ secrets.SITE_URL }}/api/cron/scrape-realtors")
-          echo "Response status: $STATUS"
+          STATUS=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+          echo "Status: $STATUS"
+          echo "Body: $BODY"
           if [ "$STATUS" != "200" ]; then
-            echo "Scrape endpoint returned $STATUS — check logs"
+            echo "Scrape endpoint returned $STATUS"
             exit 1
           fi
