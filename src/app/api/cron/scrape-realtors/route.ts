@@ -43,6 +43,7 @@ export async function GET(request: Request) {
   return NextResponse.json({
     ok: true,
     run: runMeta,
+    triggeredBy: request.headers.get("x-cron-job-org") ? "cron-job.org" : "vercel-cron",
     message: "Realtor scrape session initiated. Connect Zyte API key and Supabase to activate live scraping."
   });
 }
