@@ -703,33 +703,37 @@ button:disabled {
 
 .tab-nav {
   display: flex;
-  gap: 0;
-  border-bottom: 2px solid var(--border);
-  margin-bottom: 0;
+  gap: 10px;
+  padding: 20px 0;
 }
 
 .tab-link {
   display: inline-flex;
   align-items: center;
-  min-height: 48px;
-  padding: 0 22px;
-  border-bottom: 3px solid transparent;
-  margin-bottom: -2px;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 28px;
+  border: 2px solid #b8c4d2;
+  border-radius: var(--radius);
+  background: #ffffff;
   color: var(--muted);
   font-size: 15px;
   font-weight: 800;
   text-decoration: none;
-  transition: color 0.18s ease, border-color 0.18s ease;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .tab-link:hover {
-  color: var(--foreground);
-  border-color: var(--border);
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary-hover);
 }
 
 .tab-link-active {
-  color: var(--primary);
   border-color: var(--primary);
+  background: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(15, 118, 110, 0.28);
 }
 
 /* ── Sold Home Cards ── */
