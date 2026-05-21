@@ -3,8 +3,9 @@ import { AppShell } from "@/components/app-shell";
 import { LeadCard } from "@/components/lead-card";
 import { countActiveFilters, jobSizes, LeadFilterPanel, leadTypes, priorities } from "@/components/lead-filter-panel";
 import { LeadTable } from "@/components/lead-table";
+import { RealtorScrapeSettings } from "@/components/realtor-scrape-settings";
+import { RealtorSoldTable } from "@/components/realtor-sold-table";
 import { SettingsForm } from "@/components/settings-form";
-import { SoldHomeCard } from "@/components/sold-home-card";
 import { parseSoldHomeFilters, SoldHomeFilterPanel } from "@/components/sold-home-filter-panel";
 import { SOURCES } from "@/lib/config/sources";
 import { listLeads } from "@/lib/leads/repository";
@@ -97,14 +98,9 @@ async function SoldHomesTab({ resolved }: { resolved: Record<string, string | st
 
   return (
     <>
+      <RealtorScrapeSettings />
       <SoldHomeFilterPanel filters={filters} homeCount={homes.length} />
-
-      <section className="container grid" aria-label="Sold home list">
-        {homes.map((home) => (
-          <SoldHomeCard key={home.id} home={home} />
-        ))}
-        {!homes.length ? <p className="empty-state">No sold homes match these filters.</p> : null}
-      </section>
+      <RealtorSoldTable homes={homes} />
     </>
   );
 }
