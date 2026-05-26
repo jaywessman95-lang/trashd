@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { env } from "@/lib/env";
 import { DEFAULT_REALTOR_SCRAPE_SETTINGS } from "@/lib/sold-homes/types";
+import { scrapeHomeFinderListings } from "@/lib/sold-homes/scrapers/homefinder-listings";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -8,13 +10,11 @@ export const maxDuration = 300;
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
 
-  // Guard: if CRON_SECRET is not configured, reject all requests rather than
-  // letting "Bearer undefined" accidentally bypass auth.
   if (!env.CRON_SECRET || authHeader !== `Bearer ${env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Pacific time check: only run 6am–8pm (13:00–03:00 UTC, PDT)
+  // Pacific time check: only run 6am–8pm PT
   const nowUTC = new Date();
   const ptHour = new Date(nowUTC.toLocaleString("en-US", { timeZone: "America/Los_Angeles" })).getHours();
 
@@ -22,28 +22,68 @@ export async function GET(request: Request) {
     return NextResponse.json({ skipped: true, reason: "Outside 6am–8pm PT window", ptHour });
   }
 
+  if (!env.ZYTE_API_KEY) {
+    return NextResponse.json({ error: "ZYTE_API_KEY not configured" }, { status: 500 });
+  }
+
   const settings = DEFAULT_REALTOR_SCRAPE_SETTINGS;
-  const cutoffDate = new Date(Date.now() - settings.maxDaysSold * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
-  const runMeta = {
-    startedAt: nowUTC.toISOString(),
-    ptHour,
-    maxContactsPerSession: settings.maxContactsPerSession,
-    maxDaysSold: settings.maxDaysSold,
-    requireContact: settings.requireContact,
-    soldSince: cutoffDate,
-    sources: ["redfin", "homes_com", "realtor_com", "homesnap", "oc_recorder"]
-  };
+  let leadsFound = 0;
+  let upserted = 0;
+  let scraperError: string | null = null;
 
-  // Scraper execution is wired here once Zyte + Supabase are connected.
-  // Each connector is called in sequence, respecting maxContactsPerSession.
-  // Listings without agent phone/email are skipped when requireContact = true.
-  // Scored results are upserted into realtor_sold_listings table.
+  try {
+    const leads = await scrapeHomeFinderListings(settings.maxContactsPerSession);
+    leadsFound = leads.length;
+
+    if (leads.length > 0 && env.NEXT_PUBLIC_SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
+      const db = createSupabaseAdminClient();
+
+      const rows = leads.map((l) => ({
+        id: l.id,
+        address: l.address,
+        city: l.city,
+        state: l.state,
+        zip: l.zip ?? null,
+        sale_price: l.salePrice,
+        sold_date: l.soldDate,
+        property_type: l.propertyType,
+        sale_type: l.saleType,
+        cash_sale: l.cashSale ?? false,
+        score: l.score,
+        priority: l.priority,
+        score_reason: l.scoreReason ?? null,
+        listing_url: l.listingUrl ?? null,
+        source: l.source,
+        agent_name: l.agentName ?? null,
+        agent_phone: l.agentPhone ?? null,
+        agent_email: l.agentEmail ?? null,
+        agent_brokerage: l.agentBrokerage ?? null,
+        agent_image_url: l.agentImageUrl ?? null,
+        agent_profile_status: l.agentProfileStatus ?? "unverified",
+        updated_at: new Date().toISOString(),
+      }));
+
+      const { error } = await db
+        .from("realtor_sold_listings")
+        .upsert(rows, { onConflict: "id", ignoreDuplicates: false });
+
+      if (error) throw error;
+      upserted = rows.length;
+    }
+  } catch (e) {
+    scraperError = e instanceof Error ? e.message : String(e);
+  }
 
   return NextResponse.json({
-    ok: true,
-    run: runMeta,
-    triggeredBy: request.headers.get("x-cron-job-org") ? "cron-job.org" : "vercel-cron",
-    message: "Realtor scrape session initiated. Connect Zyte API key and Supabase to activate live scraping."
+    ok: scraperError === null,
+    startedAt: nowUTC.toISOString(),
+    ptHour,
+    maxLeads: settings.maxContactsPerSession,
+    sources: ["homefinder"],
+    leadsFound,
+    upserted,
+    error: scraperError,
+    triggeredBy: request.headers.get("x-cron-job-org") ? "cron-job.org" : "manual",
   });
 }

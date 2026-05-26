@@ -46,19 +46,32 @@ export async function GET(request: Request) {
   }
 
   const config = await getScheduledScrapeConfig();
+
+  if (!config.sources.length) {
+    return NextResponse.json({ skipped: true, reason: "Lead scanning is stopped for all configured users." });
+  }
+
   const result = [];
 
   for (const source of config.sources) {
-    result.push(
-      await runSourceScrape({
+    try {
+      result.push(
+        await runSourceScrape({
+          source,
+          cities: config.cities,
+          radiusMiles: config.radiusMiles,
+          maxSeedUrls: config.maxSeedUrls,
+          maxCandidates: config.maxCandidates,
+          persist: true
+        })
+      );
+    } catch (error) {
+      result.push({
         source,
-        cities: config.cities,
-        radiusMiles: config.radiusMiles,
-        maxSeedUrls: config.maxSeedUrls,
-        maxCandidates: config.maxCandidates,
-        persist: true
-      })
-    );
+        error: error instanceof Error ? error.message : "Unknown scrape error",
+        persisted: Boolean(env.NEXT_PUBLIC_SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY)
+      });
+    }
   }
 
   return NextResponse.json(result);
@@ -72,7 +85,7 @@ async function getScheduledScrapeConfig() {
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("user_settings")
-    .select("cities,radius,enabled_sources,scrape_coverage,max_listings_per_source,max_pages_per_source,lookback_hours")
+    .select("cities,radius,enabled_sources,scrape_coverage,max_listings_per_source,max_pages_per_source,lookback_hours,scanning_enabled")
     .limit(50);
 
   if (error || !data?.length) {
@@ -88,20 +101,33 @@ async function getScheduledScrapeConfig() {
     | "max_listings_per_source"
     | "max_pages_per_source"
     | "lookback_hours"
+    | "scanning_enabled"
   >[];
-  const coverage = getMostAggressiveCoverage(settings.map((item) => item.scrape_coverage));
+  const activeSettings = settings.filter((item) => item.scanning_enabled);
+
+  if (!activeSettings.length) {
+    return {
+      sources: [] as SourceId[],
+      cities: [],
+      radiusMiles: fallbackScrapeConfig.radiusMiles,
+      maxSeedUrls: fallbackScrapeConfig.maxSeedUrls,
+      maxCandidates: 0
+    };
+  }
+
+  const coverage = getMostAggressiveCoverage(activeSettings.map((item) => item.scrape_coverage));
   const preset = SCRAPE_COVERAGE_PRESETS.find((item) => item.id === coverage) ?? SCRAPE_COVERAGE_PRESETS[1];
-  const cities = unique(settings.flatMap((item) => item.cities)).slice(0, 25);
-  const sources = unique(settings.flatMap((item) => item.enabled_sources)) as SourceId[];
-  const maxListingsOverride = maxOptional(settings.map((item) => item.max_listings_per_source));
-  const maxPagesOverride = maxOptional(settings.map((item) => item.max_pages_per_source));
+  const cities = unique(activeSettings.flatMap((item) => item.cities)).slice(0, 25);
+  const sources = unique(activeSettings.flatMap((item) => item.enabled_sources)) as SourceId[];
+  const maxListingsOverride = maxOptional(activeSettings.map((item) => item.max_listings_per_source));
+  const maxPagesOverride = maxOptional(activeSettings.map((item) => item.max_pages_per_source));
 
   const dailyMaxListings = Math.min(maxListingsOverride ?? preset.maxListingsPerSource, 500);
 
   return {
     sources: sources.length ? sources : fallbackScrapeConfig.sources,
     cities: cities.length ? cities : fallbackScrapeConfig.cities,
-    radiusMiles: Math.max(...settings.map((item) => item.radius), fallbackScrapeConfig.radiusMiles),
+    radiusMiles: Math.max(...activeSettings.map((item) => item.radius), fallbackScrapeConfig.radiusMiles),
     maxSeedUrls: Math.min(maxPagesOverride ?? preset.maxPagesPerSource, 25),
     maxCandidates: Math.ceil(dailyMaxListings / DAILY_RUN_COUNT)
   };

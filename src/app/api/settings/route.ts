@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { userSettingsSchema } from "@/lib/validation/settings";
 import { createSupabaseServerClient, getCurrentUser } from "@/lib/supabase/server";
+
+const scanningSettingsSchema = z.object({
+  scanningEnabled: z.boolean()
+});
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -47,6 +52,7 @@ export async function PUT(request: Request) {
         max_listings_per_source: input.maxListingsPerSource,
         max_pages_per_source: input.maxPagesPerSource,
         lookback_hours: input.lookbackHours,
+        scanning_enabled: input.scanningEnabled,
         instant_alert_threshold: input.instantAlertThreshold,
         hide_duplicates: input.hideDuplicates,
         updated_at: new Date().toISOString()
@@ -59,4 +65,31 @@ export async function PUT(request: Request) {
   }
 
   return NextResponse.json({ ok: true });
+}
+
+export async function PATCH(request: Request) {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const input = scanningSettingsSchema.parse(await request.json());
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from("user_settings")
+    .upsert(
+      {
+        user_id: user.id,
+        scanning_enabled: input.scanningEnabled,
+        updated_at: new Date().toISOString()
+      },
+      { onConflict: "user_id" }
+    );
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true, scanningEnabled: input.scanningEnabled });
 }

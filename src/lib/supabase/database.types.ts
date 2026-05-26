@@ -85,6 +85,7 @@ export type Database = {
           max_listings_per_source: number | null;
           max_pages_per_source: number | null;
           lookback_hours: number | null;
+          scanning_enabled: boolean;
           instant_alert_threshold: number;
           hide_duplicates: boolean;
           created_at: string;
@@ -149,6 +150,98 @@ export type Database = {
           alert_type: string;
         };
         Update: Partial<Database["public"]["Tables"]["alerts"]["Row"]>;
+        Relationships: [];
+      };
+      realtor_contacts: {
+        Row: {
+          id: string;
+          name: string | null;
+          phone: string | null;
+          email: string | null;
+          brokerage: string | null;
+          profile_url: string | null;
+          source: string;
+          scraped_at: string;
+          created_at: string;
+          image_url: string | null;
+          ai_bio: string | null;
+          profile_status: string;
+          onboarding_email_sent_at: string | null;
+        };
+        Insert: Partial<Database["public"]["Tables"]["realtor_contacts"]["Row"]> & {
+          id: string;
+          source: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["realtor_contacts"]["Row"]>;
+        Relationships: [];
+      };
+      realtor_sold_listings: {
+        Row: {
+          id: string;
+          address: string;
+          city: string;
+          state: string;
+          zip: string | null;
+          sale_price: number;
+          sold_date: string;
+          property_type: string;
+          sale_type: string;
+          cash_sale: boolean;
+          score: number;
+          priority: string;
+          score_reason: string | null;
+          listing_url: string | null;
+          source: string;
+          agent_name: string | null;
+          agent_phone: string | null;
+          agent_email: string | null;
+          agent_brokerage: string | null;
+          agent_image_url: string | null;
+          agent_ai_bio: string | null;
+          agent_profile_status: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["realtor_sold_listings"]["Row"]> & {
+          id: string;
+          address: string;
+          city: string;
+          sale_price: number;
+          sold_date: string;
+          source: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["realtor_sold_listings"]["Row"]>;
+        Relationships: [];
+      };
+      service_operators: {
+        Row: {
+          id: string;
+          name: string | null;
+          company: string | null;
+          phone: string | null;
+          email: string | null;
+          address: string | null;
+          city: string | null;
+          state: string;
+          zip: string | null;
+          service_type: string;
+          website_url: string | null;
+          source: string;
+          score: number;
+          priority: string;
+          profile_status: string;
+          ai_bio: string | null;
+          image_url: string | null;
+          outreach_sent_at: string | null;
+          scraped_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["service_operators"]["Row"]> & {
+          id: string;
+          source: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["service_operators"]["Row"]>;
         Relationships: [];
       };
     };

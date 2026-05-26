@@ -21,10 +21,6 @@ export function SoldHomeCard({ home }: SoldHomeCardProps) {
 
       <div className="lead-meta" aria-label="Property details">
         <span>{formatTitle(home.propertyType)}</span>
-        {home.beds != null ? <span>{home.beds} bd</span> : null}
-        {home.baths != null ? <span>{home.baths} ba</span> : null}
-        {home.sqft != null ? <span>{home.sqft.toLocaleString()} sqft</span> : null}
-        {home.daysOnMarket != null ? <span>{home.daysOnMarket} DOM</span> : null}
         <span>Sold {formatDate(home.soldDate)}</span>
         <span className={`priority-badge priority-${home.priority}`}>{formatTitle(home.priority)}</span>
       </div>

@@ -74,3 +74,27 @@ function buildRawMessage(email: LeadAlertEmail): string {
 
   return Buffer.from(message).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
+
+export function buildRealtorOutreachEmail(agentName: string | null | undefined): {
+  subject: string;
+  body: string;
+} {
+  const first = agentName?.trim().split(" ")[0] ?? "there";
+  const subject = `Quick intro — post-sale cleanout partner for your listings`;
+  const body =
+    `Hi ${first},\n\n` +
+    `I came across your profile and wanted to introduce myself — I run Trashd, ` +
+    `a junk removal and cleanout service in Orange County.\n\n` +
+    `I work closely with real estate agents on post-sale cleanouts, estate clear-outs, ` +
+    `and pre-listing staging clean-ups. Fast, affordable, and reliable.\n\n` +
+    `If you ever need a cleanout vendor you can count on, I'd love to be your go-to. ` +
+    `Happy to give your clients a free, same-day quote.\n\n` +
+    `Feel free to reply to this email anytime.\n\n` +
+    `Best,\nTrashd Crew\n${env.GMAIL_FROM_EMAIL ?? "trashd.info@gmail.com"}`;
+  return { subject, body };
+}
+
+export async function sendRealtorOutreach(to: string, agentName: string | null | undefined): Promise<void> {
+  const { subject, body } = buildRealtorOutreachEmail(agentName);
+  await sendLeadAlert({ to, subject, text: body });
+}

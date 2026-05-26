@@ -49,16 +49,6 @@ export function SoldHomeFilterPanel({ filters, homeCount }: SoldHomeFilterPanelP
           </select>
         </label>
         <label>
-          Min bedrooms
-          <select defaultValue={filters.minBeds ?? ""} name="shMinBeds">
-            <option value="">Any</option>
-            <option value="2">2+</option>
-            <option value="3">3+</option>
-            <option value="4">4+</option>
-            <option value="5">5+</option>
-          </select>
-        </label>
-        <label>
           Sort
           <select defaultValue={filters.sort ?? "score"} name="shSort">
             <option value="score">Best score</option>
@@ -89,7 +79,6 @@ export function parseSoldHomeFilters(params: Record<string, string | string[] | 
     minPrice: parseOptionalNumber(params.shMinPrice),
     soldWithinHours: parseOptionalNumber(params.shSoldWithin),
     propertyType: parseEnum<PropertyType>(params.shPropertyType, propertyTypes),
-    minBeds: parseOptionalNumber(params.shMinBeds),
     sort: parseEnum(params.shSort, ["newest", "highest_price", "lowest_price", "score"] as const) ?? "score"
   };
 }

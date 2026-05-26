@@ -1,26 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DEFAULT_REALTOR_SCRAPE_SETTINGS, type RealtorScrapeSettings } from "@/lib/sold-homes/types";
+import { DEFAULT_OPERATOR_SCRAPE_SETTINGS, type OperatorScrapeSettings } from "@/lib/service-operators/types";
 
-const STORAGE_KEY = "trashd_realtor_scrape_settings";
+const STORAGE_KEY = "trashd_operator_scrape_settings";
 
-export function RealtorScrapeSettings() {
-  const [settings, setSettings] = useState<RealtorScrapeSettings>(DEFAULT_REALTOR_SCRAPE_SETTINGS);
+export function ServiceOperatorScrapeSettings() {
+  const [settings, setSettings] = useState<OperatorScrapeSettings>(DEFAULT_OPERATOR_SCRAPE_SETTINGS);
   const [status, setStatus] = useState("");
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setSettings(JSON.parse(raw) as RealtorScrapeSettings);
+      if (raw) setSettings(JSON.parse(raw) as OperatorScrapeSettings);
     } catch {
       // ignore
     }
     setLoaded(true);
   }, []);
 
-  function update<K extends keyof RealtorScrapeSettings>(key: K, value: RealtorScrapeSettings[K]) {
+  function update<K extends keyof OperatorScrapeSettings>(key: K, value: OperatorScrapeSettings[K]) {
     setSettings((prev) => ({ ...prev, [key]: value }));
     setStatus("");
   }
@@ -41,73 +41,82 @@ export function RealtorScrapeSettings() {
       <div className="realtor-settings-header">
         <div>
           <h2>Scrape Parameters</h2>
-          <p className="muted">Configure how the hourly scraper collects realtor sold listings (6am–8pm PT).</p>
+          <p className="muted">
+            Configure how the hourly scraper collects service provider contacts (7am–7pm PT).
+          </p>
         </div>
       </div>
 
       <div className="realtor-settings-grid">
         <div className="card form-panel realtor-settings-card">
-          <h3>Max contacts per session</h3>
-          <p className="muted setting-hint">Realtor listings with contact info to collect each hourly run.</p>
+          <h3>Max contacts per hour</h3>
+          <p className="muted setting-hint">
+            Service provider contacts (movers / junk removal) to collect each hourly run.
+          </p>
           <div className="slider-field">
             <div className="slider-row">
               <input
                 className="setting-slider"
-                max={100}
+                max={200}
                 min={1}
                 step={1}
                 type="range"
-                value={settings.maxContactsPerSession}
-                onChange={(e) => update("maxContactsPerSession", Number(e.target.value))}
+                value={settings.maxLeadsPerHour}
+                onChange={(e) => update("maxLeadsPerHour", Number(e.target.value))}
               />
               <input
                 className="slider-number"
-                max={100}
+                max={200}
                 min={1}
                 type="number"
-                value={settings.maxContactsPerSession}
-                onChange={(e) => update("maxContactsPerSession", Math.min(100, Math.max(1, Number(e.target.value))))}
+                value={settings.maxLeadsPerHour}
+                onChange={(e) =>
+                  update("maxLeadsPerHour", Math.min(200, Math.max(1, Number(e.target.value))))
+                }
               />
             </div>
             <div className="slider-labels">
               <span>1</span>
-              <span>50</span>
               <span>100</span>
+              <span>200</span>
             </div>
           </div>
         </div>
 
         <div className="card form-panel realtor-settings-card">
-          <h3>Max days since sold</h3>
-          <p className="muted setting-hint">Only include listings sold within this many days. Older listings have lower conversion probability.</p>
+          <h3>Max emails per run</h3>
+          <p className="muted setting-hint">
+            Outreach emails sent to newly found service providers each hourly run.
+          </p>
           <div className="slider-field">
             <div className="slider-row">
               <input
                 className="setting-slider"
-                max={30}
-                min={1}
+                max={50}
+                min={0}
                 step={1}
                 type="range"
-                value={settings.maxDaysSold}
-                onChange={(e) => update("maxDaysSold", Number(e.target.value))}
+                value={settings.maxEmailsPerRun}
+                onChange={(e) => update("maxEmailsPerRun", Number(e.target.value))}
               />
               <input
                 className="slider-number"
-                max={30}
-                min={1}
+                max={50}
+                min={0}
                 type="number"
-                value={settings.maxDaysSold}
-                onChange={(e) => update("maxDaysSold", Math.min(30, Math.max(1, Number(e.target.value))))}
+                value={settings.maxEmailsPerRun}
+                onChange={(e) =>
+                  update("maxEmailsPerRun", Math.min(50, Math.max(0, Number(e.target.value))))
+                }
               />
             </div>
             <div className="slider-labels">
-              <span>1 day</span>
-              <span>15 days</span>
-              <span>30 days</span>
+              <span>0 (off)</span>
+              <span>25</span>
+              <span>50</span>
             </div>
           </div>
         </div>
-
       </div>
 
       <div className="realtor-settings-footer">

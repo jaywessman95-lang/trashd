@@ -1,11 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SCRAPE_COVERAGE_PRESETS } from "@/lib/config/scrape-coverage";
 import { SOURCES } from "@/lib/config/sources";
 
 export function SettingsForm() {
   const [status, setStatus] = useState("");
+  const [scanningEnabled, setScanningEnabled] = useState(true);
+  const [scanningBusy, setScanningBusy] = useState(false);
+  const [scanningStatus, setScanningStatus] = useState("");
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadSettings() {
+      const response = await fetch("/api/settings");
+
+      if (!response.ok) return;
+
+      const data = (await response.json()) as { settings?: { scanning_enabled?: boolean } | null };
+
+      if (!ignore && data.settings?.scanning_enabled !== undefined) {
+        setScanningEnabled(data.settings.scanning_enabled);
+      }
+    }
+
+    void loadSettings();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   async function saveSettings(formData: FormData) {
     const enabledSources = formData.getAll("enabledSources").map(String);
@@ -33,6 +58,7 @@ export function SettingsForm() {
       maxListingsPerSource: parseOptionalNumber(formData.get("maxListingsPerSource")),
       maxPagesPerSource: parseOptionalNumber(formData.get("maxPagesPerSource")),
       lookbackHours: parseOptionalNumber(formData.get("lookbackHours")),
+      scanningEnabled,
       instantAlertThreshold: Number(formData.get("instantAlertThreshold") ?? 90),
       hideDuplicates: formData.get("hideDuplicates") === "on"
     };
@@ -44,6 +70,31 @@ export function SettingsForm() {
     });
 
     setStatus(response.ok ? "Settings saved" : "Sign in and connect Supabase before saving settings");
+  }
+
+  async function toggleScanning() {
+    const nextValue = !scanningEnabled;
+
+    setScanningBusy(true);
+    setScanningStatus("");
+
+    try {
+      const response = await fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scanningEnabled: nextValue })
+      });
+
+      if (!response.ok) {
+        setScanningStatus("Sign in and connect Supabase before changing scanning.");
+        return;
+      }
+
+      setScanningEnabled(nextValue);
+      setScanningStatus(nextValue ? "Lead scanning started" : "Lead scanning stopped");
+    } finally {
+      setScanningBusy(false);
+    }
   }
 
   return (
@@ -103,6 +154,16 @@ export function SettingsForm() {
           <h2>Scrape Coverage</h2>
           <InfoTip text="Controls how broadly Trashd checks each website. More coverage can find more jobs, but it may also pull in more low-quality listings to review." />
         </div>
+        <div className={`scan-control ${scanningEnabled ? "scan-control-active" : "scan-control-paused"}`}>
+          <div>
+            <strong>Lead scanning</strong>
+            <span>{scanningEnabled ? "Scanning is running on the scheduled lead scrape." : "Scanning is stopped until you start it again."}</span>
+          </div>
+          <button className="button secondary" disabled={scanningBusy} onClick={toggleScanning} type="button">
+            {scanningBusy ? "Updating..." : scanningEnabled ? "Stop Scanning" : "Start Scanning"}
+          </button>
+        </div>
+        {scanningStatus ? <span className="action-status">{scanningStatus}</span> : null}
         <label>
           <span className="label-with-info">
             Searches per day

@@ -18,6 +18,7 @@ export const userSettingsSchema = z.object({
   maxListingsPerSource: z.number().int().min(1).max(1000).nullable().default(null),
   maxPagesPerSource: z.number().int().min(1).max(25).nullable().default(null),
   lookbackHours: z.number().int().min(1).max(720).nullable().default(null),
+  scanningEnabled: z.boolean().default(true),
   instantAlertThreshold: z.number().int().min(0).max(100).default(90),
   hideDuplicates: z.boolean().default(true)
 });

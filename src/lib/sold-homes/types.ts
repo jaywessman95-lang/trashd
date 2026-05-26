@@ -11,26 +11,24 @@ export type SoldHomeLead = {
   state: string;
   zip?: string;
   salePrice: number;
-  listPrice?: number;
   soldDate: string;
-  beds?: number;
-  baths?: number;
-  sqft?: number;
-  yearBuilt?: number;
   propertyType: PropertyType;
   saleType: SaleType;
   cashSale?: boolean;
-  daysOnMarket?: number;
   score: number;
   priority: SoldHomePriority;
   scoreReason?: string;
   listingUrl?: string;
   source: string;
-  // Realtor contact
   agentName?: string;
   agentPhone?: string;
   agentEmail?: string;
   agentBrokerage?: string;
+  agentImageUrl?: string;
+  agentAiBio?: string;
+  agentProfileStatus?: string;
+  scrapedAt?: string;
+  contactOnly?: boolean;
 };
 
 export type SoldHomeFilters = {
@@ -38,18 +36,15 @@ export type SoldHomeFilters = {
   minPrice?: number;
   soldWithinHours?: number;
   propertyType?: PropertyType;
-  minBeds?: number;
   sort?: "newest" | "highest_price" | "lowest_price" | "score";
 };
 
 export type RealtorScrapeSettings = {
   maxContactsPerSession: number;
   maxDaysSold: number;
-  requireContact: boolean;
 };
 
 export const DEFAULT_REALTOR_SCRAPE_SETTINGS: RealtorScrapeSettings = {
   maxContactsPerSession: 20,
-  maxDaysSold: 15,
-  requireContact: true
+  maxDaysSold: 15
 };

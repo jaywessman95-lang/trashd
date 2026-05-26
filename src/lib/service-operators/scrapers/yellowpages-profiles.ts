@@ -1,0 +1,162 @@
+import { fetchWithZyte } from "@/lib/integrations/zyte";
+import { scoreOperator, isCustomDomain, detectServiceType } from "../types";
+import type { ServiceOperator } from "../types";
+import crypto from "crypto";
+
+const OC_LA_SLUGS = [
+  { city: "Orange", slug: "orange-ca" },
+  { city: "Irvine", slug: "irvine-ca" },
+  { city: "Anaheim", slug: "anaheim-ca" },
+  { city: "Huntington Beach", slug: "huntington-beach-ca" },
+  { city: "Santa Ana", slug: "santa-ana-ca" },
+  { city: "Fullerton", slug: "fullerton-ca" },
+  { city: "Newport Beach", slug: "newport-beach-ca" },
+  { city: "Costa Mesa", slug: "costa-mesa-ca" },
+  { city: "Tustin", slug: "tustin-ca" },
+  { city: "Mission Viejo", slug: "mission-viejo-ca" },
+  { city: "Los Angeles", slug: "los-angeles-ca" },
+  { city: "Long Beach", slug: "long-beach-ca" },
+  { city: "Pasadena", slug: "pasadena-ca" },
+];
+
+const CATEGORIES = ["junk-removal-service", "movers"];
+
+const EMAIL_RE = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
+const PHONE_RE = /(\(?\d{3}\)?[\s\-]\d{3}[\s\-]\d{4})/g;
+const BAD_EMAIL_RE = /noreply|no-reply|sentry|privacy|legal|press|abuse@|webmaster@|example\.|schema\.|yellowpages|superpages|yp\.com|google\.|cloudflare|amazonaws|\.png|\.jpg|\.js$/i;
+
+function extractEmail(html: string): string | undefined {
+  const raw = [...html.matchAll(EMAIL_RE)].map(m => m[0]);
+  const clean = [...new Set(raw)].filter(e =>
+    !BAD_EMAIL_RE.test(e) &&
+    !e.includes("%") &&
+    e.split("@")[1]?.includes(".") &&
+    e.length < 80
+  );
+  return clean[0];
+}
+
+function extractPhone(html: string): string | undefined {
+  const raw = [...html.matchAll(PHONE_RE)].map(m => m[0]);
+  const clean = raw.filter(p => {
+    const d = p.replace(/\D/g, "");
+    return d.length >= 10 && !["800","888","877","866","855","844"].includes(d.slice(-10,-7));
+  });
+  if (!clean[0]) return undefined;
+  const d = clean[0].replace(/\D/g, "").slice(-10);
+  return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+}
+
+function extractWebsite(html: string): string | undefined {
+  const m = html.match(/(?:href|url)="(https?:\/\/(?!(?:www\.)?yellowpages)[^"]+)"/);
+  return m?.[1];
+}
+
+function extractCompany(html: string): string | undefined {
+  const m = html.match(/<h1[^>]*>([^<]{3,80})<\/h1>/) ??
+            html.match(/<title>([^|<]{3,60})/);
+  return m?.[1]?.trim().replace(/\s*-\s*.+$/, "").trim();
+}
+
+function extractAddress(html: string): { address?: string; city?: string; zip?: string } {
+  const m = html.match(/itemprop="streetAddress"[^>]*>([^<]+)</) ??
+            html.match(/"streetAddress"\s*:\s*"([^"]+)"/);
+  const city = html.match(/itemprop="addressLocality"[^>]*>([^<]+)</) ??
+               html.match(/"addressLocality"\s*:\s*"([^"]+)"/);
+  const zip = html.match(/itemprop="postalCode"[^>]*>([^<]+)</) ??
+              html.match(/"postalCode"\s*:\s*"([^"]+)"/);
+  return {
+    address: m?.[1]?.trim(),
+    city: city?.[1]?.trim(),
+    zip: zip?.[1]?.trim(),
+  };
+}
+
+async function scrapeSearchPage(slug: string, category: string, page: number): Promise<string[]> {
+  const base = `https://www.yellowpages.com/${slug}/${category}`;
+  const url = page === 1 ? base : `${base}?page=${page}`;
+  let html: string;
+  try {
+    ({ html } = await fetchWithZyte({ url, stealth: true }));
+  } catch {
+    return [];
+  }
+  const profileUrls = [...html.matchAll(/href="(\/[^"]+\/mip\/[^"?#]+)"/g)]
+    .map(m => "https://www.yellowpages.com" + m[1])
+    .filter((u, i, a) => a.indexOf(u) === i);
+  return profileUrls;
+}
+
+async function scrapeProfile(
+  profileUrl: string,
+  city: string,
+  category: string
+): Promise<ServiceOperator | null> {
+  let html: string;
+  try {
+    ({ html } = await fetchWithZyte({ url: profileUrl, stealth: true }));
+  } catch {
+    return null;
+  }
+
+  const email = extractEmail(html);
+  const phone = extractPhone(html);
+  if (!email && !phone) return null;
+
+  const { address, city: profileCity, zip } = extractAddress(html);
+  const company = extractCompany(html);
+  const websiteUrl = extractWebsite(html);
+  const customDomain = email ? isCustomDomain(email) : false;
+  const { score, priority } = scoreOperator(!!email, !!phone, customDomain);
+  const serviceType = detectServiceType(category + " " + (company ?? ""));
+
+  const id = crypto.createHash("md5").update(`yp::${email ?? phone ?? profileUrl}`).digest("hex");
+
+  return {
+    id,
+    company: company ?? undefined,
+    phone,
+    email,
+    address,
+    city: profileCity ?? city,
+    state: "CA",
+    zip,
+    serviceType,
+    websiteUrl,
+    source: "yellowpages_profile",
+    score,
+    priority,
+    profileStatus: "unverified",
+    scrapedAt: new Date().toISOString(),
+  };
+}
+
+export async function scrapeYellowPagesProfiles(
+  maxProfiles = 60,
+  maxCities = OC_LA_SLUGS.length
+): Promise<ServiceOperator[]> {
+  const results: ServiceOperator[] = [];
+  const seenIds = new Set<string>();
+  const citiesToScrape = OC_LA_SLUGS.slice(0, maxCities);
+
+  for (const { city, slug } of citiesToScrape) {
+    if (results.length >= maxProfiles) break;
+
+    for (const category of CATEGORIES) {
+      if (results.length >= maxProfiles) break;
+
+      const profileUrls = await scrapeSearchPage(slug, category, 1);
+
+      for (const url of profileUrls) {
+        if (results.length >= maxProfiles) break;
+        const op = await scrapeProfile(url, city, category);
+        if (!op || seenIds.has(op.id)) continue;
+        seenIds.add(op.id);
+        results.push(op);
+        await new Promise(r => setTimeout(r, 300));
+      }
+    }
+  }
+
+  return results;
+}

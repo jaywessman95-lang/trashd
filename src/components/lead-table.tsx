@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { OPEN_LEAD_TABLE_FULLSCREEN } from "@/components/fullscreen-lead-table-button";
 import type { DisplayLead } from "@/lib/sample-data";
 
 type SortKey = "title" | "city" | "score" | "priority" | "jobSize" | "leadType" | "price" | "imageCount" | "eventEnd" | "firstSeenAt" | "age";
@@ -100,6 +101,15 @@ export function LeadTable({ leads }: LeadTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>("score");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
+  useEffect(() => {
+    function openFullscreen() {
+      setFullscreen(true);
+    }
+
+    window.addEventListener(OPEN_LEAD_TABLE_FULLSCREEN, openFullscreen);
+    return () => window.removeEventListener(OPEN_LEAD_TABLE_FULLSCREEN, openFullscreen);
+  }, []);
+
   function handleSort(key: SortKey) {
     if (key === sortKey) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -156,7 +166,11 @@ export function LeadTable({ leads }: LeadTableProps) {
               <td className="lead-table-meta">{lead.imageCount || "—"}</td>
               <td className="lead-table-meta">{lead.eventEnd ? formatDate(lead.eventEnd) : "—"}</td>
               <td className="lead-table-meta">{lead.firstSeenAt ? formatDate(lead.firstSeenAt) : "—"}</td>
-              <td><span className={`lead-age-badge ${ageClass(lead.firstSeenAt)}`}>{leadAge(lead.firstSeenAt)}</span></td>
+              <td>
+                <span className={`lead-age-badge ${ageClass(lead.firstSeenAt)}`} suppressHydrationWarning>
+                  {leadAge(lead.firstSeenAt)}
+                </span>
+              </td>
               <td>
                 <a className="small-button lead-table-action" href={lead.url} rel="noreferrer" target="_blank">
                   View
@@ -242,6 +256,7 @@ function formatDate(value: string) {
   }
 
   return new Intl.DateTimeFormat("en", {
+    timeZone: "America/Los_Angeles",
     month: "short",
     day: "numeric",
     hour: "numeric",

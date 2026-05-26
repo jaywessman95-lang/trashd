@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import type { SoldHomeLead } from "@/lib/sold-homes/types";
+import { RealtorCard } from "@/components/realtor-card";
 
-type SortKey = "address" | "city" | "salePrice" | "vsAsk" | "soldDate" | "dom" | "sqft" | "yearBuilt" | "saleType" | "score" | "priority" | "agentName";
+type SortKey = "priority" | "score" | "saleType" | "agentName" | "address" | "city" | "salePrice" | "soldDate" | "agentBrokerage" | "scrapedAt";
 type SortDir = "asc" | "desc";
 
 const PRIORITY_RANK: Record<string, number> = { hot_now: 3, strong: 2, good: 1 };
@@ -20,27 +21,32 @@ function sortHomes(homes: SoldHomeLead[], key: SortKey, dir: SortDir): SoldHomeL
   return [...homes].sort((a, b) => {
     let cmp = 0;
     switch (key) {
-      case "address": cmp = a.address.localeCompare(b.address); break;
-      case "city": cmp = a.city.localeCompare(b.city); break;
-      case "salePrice": cmp = a.salePrice - b.salePrice; break;
-      case "vsAsk": cmp = vsAsk(a) - vsAsk(b); break;
-      case "soldDate": cmp = Date.parse(a.soldDate) - Date.parse(b.soldDate); break;
-      case "dom": cmp = (a.daysOnMarket ?? 99) - (b.daysOnMarket ?? 99); break;
-      case "sqft": cmp = (a.sqft ?? 0) - (b.sqft ?? 0); break;
-      case "yearBuilt": cmp = (a.yearBuilt ?? 9999) - (b.yearBuilt ?? 9999); break;
-      case "saleType": cmp = a.saleType.localeCompare(b.saleType); break;
-      case "score": cmp = a.score - b.score; break;
-      case "priority": cmp = (PRIORITY_RANK[a.priority] ?? 0) - (PRIORITY_RANK[b.priority] ?? 0); break;
-      case "agentName": cmp = (a.agentName ?? "").localeCompare(b.agentName ?? ""); break;
+      case "priority":     cmp = (PRIORITY_RANK[a.priority] ?? 0) - (PRIORITY_RANK[b.priority] ?? 0); break;
+      case "score":        cmp = a.score - b.score; break;
+      case "saleType":     cmp = a.saleType.localeCompare(b.saleType); break;
+      case "agentName":    cmp = (a.agentName ?? "").localeCompare(b.agentName ?? ""); break;
+      case "address":      cmp = a.address.localeCompare(b.address); break;
+      case "city":         cmp = a.city.localeCompare(b.city); break;
+      case "salePrice":    cmp = a.salePrice - b.salePrice; break;
+      case "soldDate":     cmp = Date.parse(a.soldDate) - Date.parse(b.soldDate); break;
+      case "agentBrokerage": cmp = (a.agentBrokerage ?? "").localeCompare(b.agentBrokerage ?? ""); break;
+      case "scrapedAt":     cmp = Date.parse(a.scrapedAt ?? "0") - Date.parse(b.scrapedAt ?? "0"); break;
     }
     return dir === "asc" ? cmp : -cmp;
   });
 }
 
-function vsAsk(home: SoldHomeLead): number {
-  if (!home.listPrice || !home.salePrice) return 0;
-  return ((home.salePrice - home.listPrice) / home.listPrice) * 100;
+function timeAgo(dateStr: string): string {
+  const ms = Date.now() - Date.parse(dateStr);
+  const mins = Math.floor(ms / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(ms / 3600000);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(ms / 86400000);
+  return `${days}d ago`;
 }
+
+type ViewMode = "cards" | "table";
 
 type Props = { homes: SoldHomeLead[] };
 
@@ -64,6 +70,7 @@ function Th({ col, active, sortDir, onSort, children }: ThProps) {
 }
 
 export function RealtorSoldTable({ homes }: Props) {
+  const [view, setView] = useState<ViewMode>("cards");
   const [sortKey, setSortKey] = useState<SortKey>("score");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [copied, setCopied] = useState<string | null>(null);
@@ -93,82 +100,81 @@ export function RealtorSoldTable({ homes }: Props) {
 
   return (
     <div className="lead-table-wrap container">
+      <div className="view-toggle">
+        <button
+          className={`view-toggle-btn${view === "cards" ? " active" : ""}`}
+          type="button"
+          onClick={() => setView("cards")}
+        >
+          Cards
+        </button>
+        <button
+          className={`view-toggle-btn${view === "table" ? " active" : ""}`}
+          type="button"
+          onClick={() => setView("table")}
+        >
+          Table
+        </button>
+      </div>
+
+      {view === "cards" ? (
+        <div className="realtor-cards-grid">
+          {sorted.map((home) => <RealtorCard key={home.id} home={home} />)}
+          {!homes.length && (
+            <p className="realtor-cards-empty">No listings match these filters.</p>
+          )}
+        </div>
+      ) : (
       <div className="lead-table-scroll">
         <table className="lead-table realtor-table">
           <thead>
             <tr>
-              <Th col="address" active={sortKey === "address"} sortDir={sortDir} onSort={handleSort}>Address</Th>
-              <Th col="city" active={sortKey === "city"} sortDir={sortDir} onSort={handleSort}>City</Th>
-              <Th col="salePrice" active={sortKey === "salePrice"} sortDir={sortDir} onSort={handleSort}>Sale Price</Th>
-              <Th col="vsAsk" active={sortKey === "vsAsk"} sortDir={sortDir} onSort={handleSort}>vs. Ask</Th>
-              <Th col="soldDate" active={sortKey === "soldDate"} sortDir={sortDir} onSort={handleSort}>Sold</Th>
-              <Th col="dom" active={sortKey === "dom"} sortDir={sortDir} onSort={handleSort}>DOM</Th>
-              <th>Size</th>
-              <Th col="sqft" active={sortKey === "sqft"} sortDir={sortDir} onSort={handleSort}>Sqft</Th>
-              <Th col="yearBuilt" active={sortKey === "yearBuilt"} sortDir={sortDir} onSort={handleSort}>Yr Built</Th>
-              <Th col="saleType" active={sortKey === "saleType"} sortDir={sortDir} onSort={handleSort}>Type</Th>
-              <Th col="score" active={sortKey === "score"} sortDir={sortDir} onSort={handleSort}>Score</Th>
-              <Th col="priority" active={sortKey === "priority"} sortDir={sortDir} onSort={handleSort}>Priority</Th>
-              <Th col="agentName" active={sortKey === "agentName"} sortDir={sortDir} onSort={handleSort}>Agent</Th>
+              <Th col="priority"       active={sortKey === "priority"}       sortDir={sortDir} onSort={handleSort}>Priority</Th>
+              <Th col="score"          active={sortKey === "score"}          sortDir={sortDir} onSort={handleSort}>Score</Th>
+              <Th col="soldDate"       active={sortKey === "soldDate"}       sortDir={sortDir} onSort={handleSort}>Sold</Th>
+              <Th col="city"           active={sortKey === "city"}           sortDir={sortDir} onSort={handleSort}>City</Th>
               <th>Phone</th>
-              <th>Brokerage</th>
-              <th>Source</th>
+              <th>Email</th>
+              <Th col="address"        active={sortKey === "address"}        sortDir={sortDir} onSort={handleSort}>Address</Th>
+              <Th col="saleType"       active={sortKey === "saleType"}       sortDir={sortDir} onSort={handleSort}>Type</Th>
+              <Th col="agentName"      active={sortKey === "agentName"}      sortDir={sortDir} onSort={handleSort}>Agent</Th>
+              <Th col="salePrice"      active={sortKey === "salePrice"}      sortDir={sortDir} onSort={handleSort}>Sale Price</Th>
+              <Th col="agentBrokerage" active={sortKey === "agentBrokerage"} sortDir={sortDir} onSort={handleSort}>Brokerage</Th>
               <th></th>
+              <Th col="scrapedAt"      active={sortKey === "scrapedAt"}      sortDir={sortDir} onSort={handleSort}>Scraped</Th>
             </tr>
           </thead>
           <tbody>
             {sorted.map((home) => {
-              const diff = home.listPrice ? vsAsk(home) : null;
-              const daysAgoNum = Math.floor((Date.now() - Date.parse(home.soldDate)) / 86400000);
+              const ago = timeAgo(home.soldDate);
+              const soldDt = new Date(home.soldDate);
+              const dateLabel = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(soldDt);
+              const timeLabel = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", hour12: true }).format(soldDt);
+              const scrapeAgo = home.scrapedAt ? timeAgo(home.scrapedAt) : "—";
+              const scrapeDt = home.scrapedAt ? new Date(home.scrapedAt) : null;
+              const scrapeDateLabel = scrapeDt ? new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(scrapeDt) : "";
+              const scrapeTimeLabel = scrapeDt ? new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", hour12: true }).format(scrapeDt) : "";
               return (
                 <tr key={home.id}>
-                  <td>
-                    {home.listingUrl ? (
-                      <a className="lead-table-title-link" href={home.listingUrl} rel="noreferrer" target="_blank">
-                        <div className="lead-table-title">{home.address}</div>
-                      </a>
-                    ) : (
-                      <div className="lead-table-title">{home.address}</div>
-                    )}
-                    <div className="lead-table-source">{home.zip ?? ""}</div>
-                  </td>
-                  <td className="lead-table-city">{home.city}</td>
-                  <td className="lead-table-meta realtor-price">{formatPrice(home.salePrice)}</td>
-                  <td className="lead-table-meta">
-                    {diff !== null ? (
-                      <span className={diff >= 0 ? "vs-ask-over" : "vs-ask-under"}>
-                        {diff >= 0 ? "+" : ""}{diff.toFixed(1)}%
-                      </span>
-                    ) : "—"}
-                  </td>
-                  <td className="lead-table-meta">
-                    <div>{formatShortDate(home.soldDate)}</div>
-                    <div className="lead-table-source">{daysAgoNum === 0 ? "today" : `${daysAgoNum}d ago`}</div>
-                  </td>
-                  <td className="lead-table-meta">{home.daysOnMarket != null ? `${home.daysOnMarket}d` : "—"}</td>
-                  <td className="lead-table-meta">
-                    {home.beds != null ? `${home.beds}bd` : ""}
-                    {home.beds != null && home.baths != null ? " / " : ""}
-                    {home.baths != null ? `${home.baths}ba` : ""}
-                    {!home.beds && !home.baths ? "—" : ""}
-                  </td>
-                  <td className="lead-table-meta">{home.sqft != null ? home.sqft.toLocaleString() : "—"}</td>
-                  <td className="lead-table-meta">{home.yearBuilt ?? "—"}</td>
-                  <td>
-                    <span className={`sale-type-badge sale-type-${home.saleType}`}>
-                      {SALE_TYPE_LABEL[home.saleType] ?? home.saleType}
-                    </span>
-                    {home.cashSale ? <span className="cash-badge">Cash</span> : null}
-                  </td>
-                  <td>
-                    <span className={`lead-table-score ${scoreClass(home.score)}`}>{home.score}</span>
-                  </td>
                   <td>
                     <span className={`lead-table-priority priority-${home.priority}`}>
                       {formatTitle(home.priority)}
                     </span>
                   </td>
-                  <td className="lead-table-meta">{home.agentName ?? "—"}</td>
+                  <td>
+                    <span className={`lead-table-score ${scoreClass(home.score)}`}>{home.score}</span>
+                  </td>
+                  <td className="sold-time-cell">
+                    {home.contactOnly ? (
+                      <span className="no-contact">—</span>
+                    ) : (
+                      <>
+                        <span className="sold-time-ago">{ago}</span>
+                        <span className="sold-time-date">{dateLabel} {timeLabel}</span>
+                      </>
+                    )}
+                  </td>
+                  <td className="lead-table-city">{home.city}</td>
                   <td>
                     {home.agentPhone ? (
                       <div className="phone-cell">
@@ -186,8 +192,44 @@ export function RealtorSoldTable({ homes }: Props) {
                       </div>
                     ) : <span className="no-contact">No phone</span>}
                   </td>
+                  <td>
+                    {home.agentEmail ? (
+                      <div className="phone-cell">
+                        <a className="phone-link" href={`mailto:${home.agentEmail}`}>
+                          {home.agentEmail}
+                        </a>
+                        <button
+                          className="copy-btn"
+                          title="Copy email"
+                          type="button"
+                          onClick={() => copyText(home.agentEmail!, `email-${home.id}`)}
+                        >
+                          {copied === `email-${home.id}` ? "✓" : "⎘"}
+                        </button>
+                      </div>
+                    ) : <span className="no-contact">No email</span>}
+                  </td>
+                  <td>
+                    {home.contactOnly ? (
+                      <span className="contact-only-tag">Contact Only</span>
+                    ) : home.listingUrl ? (
+                      <a className="lead-table-title-link" href={home.listingUrl} rel="noreferrer" target="_blank">
+                        <div className="lead-table-title">{home.address}</div>
+                      </a>
+                    ) : (
+                      <div className="lead-table-title">{home.address}</div>
+                    )}
+                    {!home.contactOnly && <div className="lead-table-source">{home.zip ?? ""}</div>}
+                  </td>
+                  <td>
+                    <span className={`sale-type-badge sale-type-${home.saleType}`}>
+                      {SALE_TYPE_LABEL[home.saleType] ?? home.saleType}
+                    </span>
+                    {home.cashSale ? <span className="cash-badge">Cash</span> : null}
+                  </td>
+                  <td className="lead-table-meta">{home.agentName ?? "—"}</td>
+                  <td className="lead-table-meta realtor-price">{home.contactOnly || home.salePrice === 0 ? "—" : formatPrice(home.salePrice)}</td>
                   <td className="lead-table-meta">{home.agentBrokerage ?? "—"}</td>
-                  <td className="lead-table-meta realtor-source-badge">{home.source.replace("_", ".")}</td>
                   <td>
                     <button
                       className={`small-button copy-msg-btn${copied === `msg-${home.id}` ? " copied" : ""}`}
@@ -197,17 +239,26 @@ export function RealtorSoldTable({ homes }: Props) {
                       {copied === `msg-${home.id}` ? "✓ Copied" : "Copy Pitch"}
                     </button>
                   </td>
+                  <td className="sold-time-cell">
+                    {scrapeDt ? (
+                      <>
+                        <span className="sold-time-ago">{scrapeAgo}</span>
+                        <span className="sold-time-date">{scrapeDateLabel} {scrapeTimeLabel}</span>
+                      </>
+                    ) : <span className="no-contact">—</span>}
+                  </td>
                 </tr>
               );
             })}
             {!homes.length ? (
               <tr>
-                <td className="lead-table-empty" colSpan={17}>No listings match these filters.</td>
+                <td className="lead-table-empty" colSpan={13}>No listings match these filters.</td>
               </tr>
             ) : null}
           </tbody>
         </table>
       </div>
+      )}
     </div>
   );
 }
@@ -224,8 +275,4 @@ function formatTitle(value: string) {
 
 function formatPrice(value: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
-}
-
-function formatShortDate(value: string) {
-  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date(value));
 }
