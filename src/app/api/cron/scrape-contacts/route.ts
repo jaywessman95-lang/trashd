@@ -19,17 +19,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "ZYTE_API_KEY not configured" }, { status: 500 });
   }
 
-  // Only run 7am–7pm PT to avoid burning Zyte credits overnight
   const nowUTC = new Date();
   const ptHour = new Date(
     nowUTC.toLocaleString("en-US", { timeZone: "America/Los_Angeles" })
   ).getHours();
-  if (ptHour < 7 || ptHour >= 19) {
-    return NextResponse.json({ skipped: true, reason: "Outside 7am–7pm PT window", ptHour });
-  }
 
   // Read optional query params for targeted runs
   const url = new URL(request.url);
+  const force = url.searchParams.get("force") === "true";
+
+  if (!force && (ptHour < 7 || ptHour >= 19)) {
+    return NextResponse.json({ skipped: true, reason: "Outside 7am–7pm PT window", ptHour });
+  }
   const sourcesParam = url.searchParams.get("sources");
   const sources = sourcesParam ? sourcesParam.split(",").map((s) => s.trim()) : undefined;
   const maxPages = parseInt(url.searchParams.get("maxPages") ?? "10", 10);

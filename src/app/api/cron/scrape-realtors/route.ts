@@ -14,11 +14,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Pacific time check: only run 6am–8pm PT
   const nowUTC = new Date();
   const ptHour = new Date(nowUTC.toLocaleString("en-US", { timeZone: "America/Los_Angeles" })).getHours();
+  const force = new URL(request.url).searchParams.get("force") === "true";
 
-  if (ptHour < 6 || ptHour >= 20) {
+  if (!force && (ptHour < 6 || ptHour >= 20)) {
     return NextResponse.json({ skipped: true, reason: "Outside 6am–8pm PT window", ptHour });
   }
 

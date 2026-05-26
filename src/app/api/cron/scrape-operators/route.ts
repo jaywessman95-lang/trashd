@@ -22,11 +22,14 @@ export async function GET(request: Request) {
   const ptHour = new Date(
     nowUTC.toLocaleString("en-US", { timeZone: "America/Los_Angeles" })
   ).getHours();
-  if (ptHour < 7 || ptHour >= 19) {
+
+  const url = new URL(request.url);
+  const force = url.searchParams.get("force") === "true";
+
+  if (!force && (ptHour < 7 || ptHour >= 19)) {
     return NextResponse.json({ skipped: true, reason: "Outside 7am–7pm PT window", ptHour });
   }
 
-  const url = new URL(request.url);
   const maxLeads = parseInt(
     url.searchParams.get("maxLeads") ?? String(DEFAULT_OPERATOR_SCRAPE_SETTINGS.maxLeadsPerHour),
     10
