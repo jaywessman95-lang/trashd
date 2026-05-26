@@ -88,7 +88,9 @@ export function RealtorCard({ home }: Props) {
               {initials}
             </div>
           )}
-          <span className="unverified-badge">Unverified</span>
+          <span className={home.agentProfileStatus === "verified" ? "verified-badge" : "unverified-badge"}>
+            {home.agentProfileStatus === "verified" ? "Verified" : "Unverified"}
+          </span>
         </div>
 
         <div className="realtor-card-identity">

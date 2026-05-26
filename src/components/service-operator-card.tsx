@@ -71,7 +71,9 @@ export function ServiceOperatorCard({ operator: op }: Props) {
           <div className="realtor-avatar realtor-avatar-initials" style={{ background: bg }}>
             {initials}
           </div>
-          <span className="unverified-badge">Unverified</span>
+          <span className={op.profileStatus === "verified" ? "verified-badge" : "unverified-badge"}>
+            {op.profileStatus === "verified" ? "Verified" : "Unverified"}
+          </span>
         </div>
 
         <div className="realtor-card-identity">

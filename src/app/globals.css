@@ -2769,6 +2769,95 @@ button:disabled {
   border: 1px solid #c4b5fd;
 }
 
+.verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.verified-badge::before {
+  content: "✓";
+  font-size: 10px;
+}
+
+/* ── Activation page ────────────────────────────── */
+.activate-page {
+  display: flex;
+  justify-content: center;
+  padding: 60px 20px;
+}
+
+.activate-card {
+  max-width: 480px;
+  width: 100%;
+  text-align: center;
+  padding: 48px 40px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  background: var(--panel);
+}
+
+.activate-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  line-height: 1;
+}
+
+.activate-card h1 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 12px;
+}
+
+.activate-card p {
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0 0 8px;
+}
+
+.activate-card strong {
+  color: var(--fg);
+}
+
+.activate-success {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.activate-success .activate-icon { color: #16a34a; }
+.activate-success h1 { color: #166534; }
+
+.activate-already {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.activate-already .activate-icon { color: #2563eb; }
+.activate-already h1 { color: #1e40af; }
+
+.activate-error {
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+
+.activate-error .activate-icon { color: #dc2626; }
+.activate-error h1 { color: #991b1b; }
+
+.activate-muted {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 16px;
+}
+
 .operator-source-tag {
   display: inline-flex;
   align-items: center;

@@ -167,6 +167,7 @@ export type Database = {
           ai_bio: string | null;
           profile_status: string;
           onboarding_email_sent_at: string | null;
+          verification_token: string | null;
         };
         Insert: Partial<Database["public"]["Tables"]["realtor_contacts"]["Row"]> & {
           id: string;
@@ -233,6 +234,7 @@ export type Database = {
           ai_bio: string | null;
           image_url: string | null;
           outreach_sent_at: string | null;
+          verification_token: string | null;
           scraped_at: string;
           created_at: string;
           updated_at: string;

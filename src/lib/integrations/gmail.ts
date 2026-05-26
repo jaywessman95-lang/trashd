@@ -75,12 +75,21 @@ function buildRawMessage(email: LeadAlertEmail): string {
   return Buffer.from(message).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-export function buildRealtorOutreachEmail(agentName: string | null | undefined): {
-  subject: string;
-  body: string;
-} {
+const APP_BASE_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL
+  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  : "https://trashd.vercel.app";
+
+export function buildRealtorOutreachEmail(
+  agentName: string | null | undefined,
+  activationToken?: string
+): { subject: string; body: string } {
   const first = agentName?.trim().split(" ")[0] ?? "there";
   const subject = `Quick intro — post-sale cleanout partner for your listings`;
+  const activationLine = activationToken
+    ? `\n\nWe've also created a free profile for you on Trashd so junk removal operators ` +
+      `can find and contact you directly. Click below to activate it (one click, no account needed):\n` +
+      `${APP_BASE_URL}/activate/${activationToken}\n`
+    : "";
   const body =
     `Hi ${first},\n\n` +
     `I came across your profile and wanted to introduce myself — I run Trashd, ` +
@@ -88,13 +97,50 @@ export function buildRealtorOutreachEmail(agentName: string | null | undefined):
     `I work closely with real estate agents on post-sale cleanouts, estate clear-outs, ` +
     `and pre-listing staging clean-ups. Fast, affordable, and reliable.\n\n` +
     `If you ever need a cleanout vendor you can count on, I'd love to be your go-to. ` +
-    `Happy to give your clients a free, same-day quote.\n\n` +
+    `Happy to give your clients a free, same-day quote.` +
+    activationLine + `\n` +
     `Feel free to reply to this email anytime.\n\n` +
     `Best,\nTrashd Crew\n${env.GMAIL_FROM_EMAIL ?? "trashd.info@gmail.com"}`;
   return { subject, body };
 }
 
-export async function sendRealtorOutreach(to: string, agentName: string | null | undefined): Promise<void> {
-  const { subject, body } = buildRealtorOutreachEmail(agentName);
+export function buildOperatorOutreachEmail(
+  companyName: string | null | undefined,
+  activationToken?: string
+): { subject: string; body: string } {
+  const name = companyName?.trim() ?? "there";
+  const subject = `Get more realtor referrals — claim your free profile on Trashd`;
+  const activationLine = activationToken
+    ? `\nClick below to activate your free listing (one click, no account needed):\n` +
+      `${APP_BASE_URL}/activate/${activationToken}\n`
+    : "";
+  const body =
+    `Hi ${name},\n\n` +
+    `We found your business while searching for top-rated junk removal and moving services ` +
+    `in your area and wanted to reach out.\n\n` +
+    `Trashd is a platform that connects real estate agents with reliable cleanout and ` +
+    `moving services. Realtors use it to refer clients who need a cleanout after a home sale.\n\n` +
+    `We'd love to list your business so local realtors can find and recommend you.` +
+    activationLine + `\n` +
+    `Feel free to reply with any questions.\n\n` +
+    `Best,\nTrashd Team\n${env.GMAIL_FROM_EMAIL ?? "trashd.info@gmail.com"}`;
+  return { subject, body };
+}
+
+export async function sendRealtorOutreach(
+  to: string,
+  agentName: string | null | undefined,
+  activationToken?: string
+): Promise<void> {
+  const { subject, body } = buildRealtorOutreachEmail(agentName, activationToken);
+  await sendLeadAlert({ to, subject, text: body });
+}
+
+export async function sendOperatorOutreach(
+  to: string,
+  companyName: string | null | undefined,
+  activationToken?: string
+): Promise<void> {
+  const { subject, body } = buildOperatorOutreachEmail(companyName, activationToken);
   await sendLeadAlert({ to, subject, text: body });
 }

@@ -3,6 +3,7 @@ import { env } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { runContactScrapers } from "@/lib/sold-homes/scrapers/contacts";
 import { sendRealtorOutreach } from "@/lib/integrations/gmail";
+import crypto from "crypto";
 
 const MAX_EMAILS_PER_RUN = 20;
 
@@ -39,6 +40,7 @@ export async function GET(request: Request) {
   let upserted = 0;
   let emailsSent = 0;
   let runError: string | null = null;
+  let lastEmailError: string | null = null;
   let bySource: Record<string, { contacts: number; pages: number; error?: string }> = {};
 
   try {
@@ -58,6 +60,7 @@ export async function GET(request: Request) {
         source: c.source,
         scraped_at: c.scrapedAt,
         profile_status: "unverified",
+        verification_token: crypto.randomUUID(),
       }));
 
       // Upsert — ignoreDuplicates: true preserves onboarding_email_sent_at for existing rows
@@ -74,7 +77,7 @@ export async function GET(request: Request) {
       if (env.GMAIL_CLIENT_ID && env.GMAIL_REFRESH_TOKEN) {
         const { data: toEmail } = await db
           .from("realtor_contacts")
-          .select("id, name, email")
+          .select("id, name, email, verification_token")
           .not("email", "is", null)
           .is("onboarding_email_sent_at", null)
           .order("scraped_at", { ascending: false })
@@ -83,14 +86,19 @@ export async function GET(request: Request) {
         for (const contact of toEmail ?? []) {
           if (!contact.email) continue;
           try {
-            await sendRealtorOutreach(contact.email, contact.name);
+            await sendRealtorOutreach(
+              contact.email,
+              contact.name,
+              contact.verification_token ?? undefined
+            );
             await db
               .from("realtor_contacts")
               .update({ onboarding_email_sent_at: new Date().toISOString() })
               .eq("id", contact.id);
             emailsSent++;
-          } catch {
-            // log but don't fail the whole run
+          } catch (emailErr) {
+            lastEmailError = emailErr instanceof Error ? emailErr.message
+              : ((emailErr as { message?: string })?.message ?? JSON.stringify(emailErr));
           }
         }
       }
@@ -107,6 +115,7 @@ export async function GET(request: Request) {
     emailsSent,
     bySource,
     error: runError,
+    emailError: lastEmailError,
     triggeredBy: request.headers.get("x-cron-job-org") ? "cron-job.org" : "manual",
   });
 }

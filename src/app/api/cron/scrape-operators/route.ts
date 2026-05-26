@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { env } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { runOperatorScrapers } from "@/lib/service-operators/scrapers";
-import { sendRealtorOutreach } from "@/lib/integrations/gmail";
+import { sendOperatorOutreach } from "@/lib/integrations/gmail";
+import crypto from "crypto";
 import { DEFAULT_OPERATOR_SCRAPE_SETTINGS } from "@/lib/service-operators/types";
 
 export const runtime = "nodejs";
@@ -42,6 +43,7 @@ export async function GET(request: Request) {
   let upserted = 0;
   let emailsSent = 0;
   let runError: string | null = null;
+  let lastEmailError: string | null = null;
   let bySource: Record<string, number> = {};
 
   try {
@@ -67,6 +69,7 @@ export async function GET(request: Request) {
         priority: op.priority,
         profile_status: op.profileStatus ?? "unverified",
         scraped_at: op.scrapedAt ?? nowUTC.toISOString(),
+        verification_token: crypto.randomUUID(),
       }));
 
       for (let i = 0; i < rows.length; i += 200) {
@@ -82,7 +85,7 @@ export async function GET(request: Request) {
       if (maxEmails > 0 && env.GMAIL_CLIENT_ID && env.GMAIL_REFRESH_TOKEN) {
         const { data: toEmail } = await db
           .from("service_operators")
-          .select("id, company, email")
+          .select("id, company, email, verification_token")
           .not("email", "is", null)
           .is("outreach_sent_at", null)
           .order("scraped_at", { ascending: false })
@@ -91,14 +94,19 @@ export async function GET(request: Request) {
         for (const op of toEmail ?? []) {
           if (!op.email) continue;
           try {
-            await sendRealtorOutreach(op.email, op.company);
+            await sendOperatorOutreach(
+              op.email,
+              op.company,
+              op.verification_token ?? undefined
+            );
             await db
               .from("service_operators")
               .update({ outreach_sent_at: nowUTC.toISOString() })
               .eq("id", op.id);
             emailsSent++;
-          } catch {
-            // log but don't fail the run
+          } catch (emailErr) {
+            lastEmailError = emailErr instanceof Error ? emailErr.message
+              : ((emailErr as { message?: string })?.message ?? JSON.stringify(emailErr));
           }
         }
       }
@@ -117,6 +125,7 @@ export async function GET(request: Request) {
     emailsSent,
     bySource,
     error: runError,
+    emailError: lastEmailError,
     triggeredBy: request.headers.get("x-cron-job-org") ? "cron-job.org" : "manual",
   });
 }
