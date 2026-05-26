@@ -96,7 +96,7 @@ export async function GET(request: Request) {
       }
     }
   } catch (e) {
-    runError = e instanceof Error ? e.message : String(e);
+    runError = e instanceof Error ? e.message : ((e as { message?: string })?.message ?? JSON.stringify(e));
   }
 
   return NextResponse.json({
