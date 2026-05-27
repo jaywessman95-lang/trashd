@@ -5,6 +5,10 @@ import { scrapeHomeFinder } from "./homefinder";
 import { scrapeYellowPages } from "./yellowpages";
 import { scrapeEZlocal } from "./ezlocal";
 import { scrapeFirstTeam } from "./firstteam";
+import { scrapeHomeLight } from "./homelight";
+import { scrapeBerkshireHathaway } from "./berkshire-hathaway";
+import { scrapeRealEstateAgentCom } from "./realestateagent-com";
+import { scrapePacificSothebys } from "./pacific-sothebys";
 import type { ContactScrapeResult, RealtorContact } from "./types";
 
 export type { RealtorContact, ContactScrapeResult };
@@ -32,6 +36,10 @@ const ALL_SOURCES = [
   "yellowpages",
   "ezlocal",
   "firstteam",
+  "homelight",
+  "bhhscalifornia",
+  "realestateagent_com",
+  "pacificsir",
 ];
 
 export async function runContactScrapers(
@@ -55,6 +63,14 @@ export async function runContactScrapers(
     runners.push(() => scrapeEZlocal());
   if (sources.includes("firstteam"))
     runners.push(() => scrapeFirstTeam());
+  if (sources.includes("homelight"))
+    runners.push(() => scrapeHomeLight(maxPages));
+  if (sources.includes("bhhscalifornia"))
+    runners.push(() => scrapeBerkshireHathaway());
+  if (sources.includes("realestateagent_com"))
+    runners.push(() => scrapeRealEstateAgentCom(maxPages));
+  if (sources.includes("pacificsir"))
+    runners.push(() => scrapePacificSothebys());
 
   // Run sequentially to avoid hammering Zyte concurrency limits
   const results: ContactScrapeResult[] = [];

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { env } from "@/lib/env";
 import { DEFAULT_REALTOR_SCRAPE_SETTINGS } from "@/lib/sold-homes/types";
 import { scrapeHomeFinderListings } from "@/lib/sold-homes/scrapers/homefinder-listings";
+import { scrapeEstatlyListings } from "@/lib/sold-homes/scrapers/estately-listings";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
@@ -33,13 +34,24 @@ export async function GET(request: Request) {
   let scraperError: string | null = null;
 
   try {
-    const leads = await scrapeHomeFinderListings(settings.maxContactsPerSession);
-    leadsFound = leads.length;
+    // Run both scrapers and merge; HomeFinder returns 0 when blocked so Estately fills the gap
+    const [homeFinderLeads, estatelyLeads] = await Promise.allSettled([
+      scrapeHomeFinderListings(settings.maxContactsPerSession),
+      scrapeEstatlyListings(settings.maxContactsPerSession),
+    ]);
+    const leads = [
+      ...(homeFinderLeads.status === "fulfilled" ? homeFinderLeads.value : []),
+      ...(estatelyLeads.status === "fulfilled" ? estatelyLeads.value : []),
+    ];
+    // Dedup by id across both sources
+    const seen = new Set<string>();
+    const deduped = leads.filter((l) => { if (seen.has(l.id)) return false; seen.add(l.id); return true; });
+    leadsFound = deduped.length;
 
-    if (leads.length > 0 && env.NEXT_PUBLIC_SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
+    if (deduped.length > 0 && env.NEXT_PUBLIC_SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
       const db = createSupabaseAdminClient();
 
-      const rows = leads.map((l) => ({
+      const rows = deduped.map((l) => ({
         id: l.id,
         address: l.address,
         city: l.city,
@@ -81,7 +93,7 @@ export async function GET(request: Request) {
     startedAt: nowUTC.toISOString(),
     ptHour,
     maxLeads: settings.maxContactsPerSession,
-    sources: ["homefinder"],
+    sources: ["homefinder", "estately"],
     leadsFound,
     upserted,
     error: scraperError,
