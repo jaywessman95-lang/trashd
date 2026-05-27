@@ -123,10 +123,16 @@ const APP_BASE_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL
 
 export function buildRealtorOutreachEmail(
   agentName: string | null | undefined,
-  activationToken?: string
+  activationToken?: string,
+  vendorCount?: number
 ): { subject: string; body: string } {
   const first = agentName?.trim().split(" ")[0] ?? "there";
-  const subject = `Quick intro — post-sale cleanout partner for your listings`;
+  const vendorLine = vendorCount && vendorCount > 0
+    ? `${vendorCount} vetted vendor${vendorCount === 1 ? "" : "s"}`
+    : "a network of vetted vendors";
+  const subject = vendorCount && vendorCount > 0
+    ? `${vendorCount} cleanout vendors ready for your clients in OC (same-day quotes)`
+    : `Your clients need a cleanout — ${vendorLine} in OC, ready to go`;
   const activationLine = activationToken
     ? `\n\nWe've also created a free profile for you on Trashd so junk removal operators ` +
       `can find and contact you directly. Click below to activate it (one click, no account needed):\n` +
@@ -134,35 +140,42 @@ export function buildRealtorOutreachEmail(
     : "";
   const body =
     `Hi ${first},\n\n` +
-    `I came across your profile and wanted to introduce myself — I run Trashd, ` +
-    `a junk removal and cleanout service in Orange County.\n\n` +
-    `I work closely with real estate agents on post-sale cleanouts, estate clear-outs, ` +
-    `and pre-listing staging clean-ups. Fast, affordable, and reliable.\n\n` +
-    `If you ever need a cleanout vendor you can count on, I'd love to be your go-to. ` +
-    `Happy to give your clients a free, same-day quote.` +
+    `I run Trashd — a platform connecting Orange County realtors with reliable junk removal ` +
+    `and cleanout vendors. Right now we have **${vendorLine}** in OC who can quote your ` +
+    `clients same-day, so you always have someone to call.\n\n` +
+    `Whether it's a post-sale cleanout, estate clear-out, or pre-listing staging clean-up — ` +
+    `your clients get fast, affordable service and you get a referral you can actually stand behind.\n\n` +
+    `No account needed. Just forward a client's info and we handle the rest.` +
     activationLine + `\n` +
-    `Feel free to reply to this email anytime.\n\n` +
+    `Feel free to reply anytime — happy to answer questions.\n\n` +
     `Best,\nTrashd Crew\n${env.GMAIL_FROM_EMAIL ?? "trashd.info@gmail.com"}`;
   return { subject, body };
 }
 
 export function buildOperatorOutreachEmail(
   companyName: string | null | undefined,
-  activationToken?: string
+  activationToken?: string,
+  recentSalesCount?: number
 ): { subject: string; body: string } {
   const name = companyName?.trim() ?? "there";
-  const subject = `Get more realtor referrals — claim your free profile on Trashd`;
+  const salesLine = recentSalesCount && recentSalesCount > 0
+    ? `${recentSalesCount} homes`
+    : "dozens of homes";
+  const subject = recentSalesCount && recentSalesCount > 0
+    ? `${recentSalesCount} OC homes sold this month — owners need cleanouts, no vendor to call`
+    : `OC realtors need cleanout vendors — is your business listed on Trashd?`;
   const activationLine = activationToken
-    ? `\nClick below to activate your free listing (one click, no account needed):\n` +
+    ? `\nClaim your free listing now (one click, no account needed):\n` +
       `${APP_BASE_URL}/activate/${activationToken}\n`
     : "";
   const body =
     `Hi ${name},\n\n` +
-    `We found your business while searching for top-rated junk removal and moving services ` +
-    `in your area and wanted to reach out.\n\n` +
-    `Trashd is a platform that connects real estate agents with reliable cleanout and ` +
-    `moving services. Realtors use it to refer clients who need a cleanout after a home sale.\n\n` +
-    `We'd love to list your business so local realtors can find and recommend you.` +
+    `We're sitting on **${salesLine} sold in Orange County this month** — and when realtors ` +
+    `ask us for a cleanout referral, we don't have enough vendors to send them to.\n\n` +
+    `Trashd connects real estate agents with reliable junk removal and cleanout businesses ` +
+    `like yours. Realtors use it to refer clients who need a post-sale or pre-listing cleanout, ` +
+    `and right now there's more demand than supply.\n\n` +
+    `A free listing puts your business in front of every OC realtor who uses our platform.` +
     activationLine + `\n` +
     `Feel free to reply with any questions.\n\n` +
     `Best,\nTrashd Team\n${env.GMAIL_FROM_EMAIL ?? "trashd.info@gmail.com"}`;
@@ -172,9 +185,10 @@ export function buildOperatorOutreachEmail(
 export async function sendRealtorOutreach(
   to: string,
   agentName: string | null | undefined,
-  activationToken?: string
+  activationToken?: string,
+  vendorCount?: number
 ): Promise<void> {
-  const { subject, body } = buildRealtorOutreachEmail(agentName, activationToken);
+  const { subject, body } = buildRealtorOutreachEmail(agentName, activationToken, vendorCount);
   const accessToken = await getGmailAccessToken();
   const messageId = await sendRaw({ to, subject, text: body }, accessToken);
   const labelId = await getOrCreateLabel("Outreach Realtor", accessToken);
@@ -184,9 +198,10 @@ export async function sendRealtorOutreach(
 export async function sendOperatorOutreach(
   to: string,
   companyName: string | null | undefined,
-  activationToken?: string
+  activationToken?: string,
+  recentSalesCount?: number
 ): Promise<void> {
-  const { subject, body } = buildOperatorOutreachEmail(companyName, activationToken);
+  const { subject, body } = buildOperatorOutreachEmail(companyName, activationToken, recentSalesCount);
   const accessToken = await getGmailAccessToken();
   const messageId = await sendRaw({ to, subject, text: body }, accessToken);
   const labelId = await getOrCreateLabel("Outreach Junk", accessToken);

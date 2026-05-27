@@ -83,6 +83,12 @@ export async function GET(request: Request) {
 
       // Send outreach emails to newly inserted operators that have an email
       if (maxEmails > 0 && env.GMAIL_CLIENT_ID && env.GMAIL_REFRESH_TOKEN) {
+        const thirtyDaysAgo = new Date(nowUTC.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+        const { count: recentSalesCount } = await db
+          .from("realtor_sold_listings")
+          .select("id", { count: "exact", head: true })
+          .gte("sold_date", thirtyDaysAgo);
+
         const { data: toEmail } = await db
           .from("service_operators")
           .select("id, company, email, verification_token")
@@ -97,7 +103,8 @@ export async function GET(request: Request) {
             await sendOperatorOutreach(
               op.email,
               op.company,
-              op.verification_token ?? undefined
+              op.verification_token ?? undefined,
+              recentSalesCount ?? undefined
             );
             await db
               .from("service_operators")

@@ -75,6 +75,10 @@ export async function GET(request: Request) {
 
       // Send outreach emails to newly inserted contacts that have an email
       if (env.GMAIL_CLIENT_ID && env.GMAIL_REFRESH_TOKEN) {
+        const { count: vendorCount } = await db
+          .from("service_operators")
+          .select("id", { count: "exact", head: true });
+
         const { data: toEmail } = await db
           .from("realtor_contacts")
           .select("id, name, email, verification_token")
@@ -89,7 +93,8 @@ export async function GET(request: Request) {
             await sendRealtorOutreach(
               contact.email,
               contact.name,
-              contact.verification_token ?? undefined
+              contact.verification_token ?? undefined,
+              vendorCount ?? undefined
             );
             await db
               .from("realtor_contacts")
