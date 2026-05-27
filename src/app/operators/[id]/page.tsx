@@ -1,4 +1,3 @@
-"use server";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { getServiceOperator } from "@/lib/service-operators/repository";
