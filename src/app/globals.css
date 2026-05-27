@@ -2883,6 +2883,13 @@ button:disabled {
   text-decoration: none;
 }
 .activate-profile-link:hover { opacity: 0.88; }
+.activate-secondary-link {
+  background: transparent;
+  color: var(--brand);
+  border: 1.5px solid var(--brand);
+  margin-top: 8px;
+}
+.activate-secondary-link:hover { background: color-mix(in srgb, var(--brand) 8%, transparent); opacity: 1; }
 
 /* ── Public profile pages ───────────────────────── */
 .profile-page {

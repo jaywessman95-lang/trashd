@@ -70,6 +70,8 @@ function ActivateResult({
   message?: string;
 }) {
   const displayName = name ?? (type === "realtor" ? "Your realtor profile" : "Your business profile");
+  const leadsUrl = type === "operator" ? "/leads?tab=realtors-just-sold" : "/services-for-realtors";
+  const leadsLabel = type === "operator" ? "Browse Realtor Leads →" : "Find Cleanout Services for Your Clients →";
 
   return (
     <AppShell>
@@ -89,6 +91,11 @@ function ActivateResult({
                 View &amp; Edit Your Profile &rarr;
               </a>
             )}
+            {type && (
+              <a className="activate-profile-link activate-secondary-link" href={leadsUrl}>
+                {leadsLabel}
+              </a>
+            )}
             <p className="activate-muted">No account needed — your profile is live.</p>
           </div>
         )}
@@ -100,6 +107,11 @@ function ActivateResult({
             {profileUrl && (
               <a className="activate-profile-link" href={profileUrl}>
                 View &amp; Edit Your Profile &rarr;
+              </a>
+            )}
+            {type && (
+              <a className="activate-profile-link activate-secondary-link" href={leadsUrl}>
+                {leadsLabel}
               </a>
             )}
           </div>
