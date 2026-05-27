@@ -29,6 +29,7 @@ export type SoldHomeLead = {
   agentProfileStatus?: string;
   scrapedAt?: string;
   contactOnly?: boolean;
+  bedrooms?: number;
 };
 
 export type SoldHomeFilters = {

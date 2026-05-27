@@ -200,6 +200,7 @@ export type Database = {
           agent_image_url: string | null;
           agent_ai_bio: string | null;
           agent_profile_status: string;
+          bedrooms: number | null;
           created_at: string;
           updated_at: string;
         };

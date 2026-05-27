@@ -1,6 +1,32 @@
 import { env } from "@/lib/env";
 import type { ServiceOperator, ServiceOperatorFilters } from "./types";
 
+export async function getServiceOperator(id: string): Promise<ServiceOperator | null> {
+  if (!env.NEXT_PUBLIC_SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return null;
+  const { createSupabaseAdminClient } = await import("@/lib/supabase/admin");
+  const db = createSupabaseAdminClient();
+  const { data } = await db.from("service_operators").select("*").eq("id", id).maybeSingle();
+  if (!data) return null;
+  return {
+    id: data.id,
+    name: data.name ?? undefined,
+    company: data.company ?? undefined,
+    phone: data.phone ?? undefined,
+    email: data.email ?? undefined,
+    address: data.address ?? undefined,
+    city: data.city ?? undefined,
+    state: data.state ?? undefined,
+    zip: data.zip ?? undefined,
+    serviceType: (data.service_type ?? "junk_removal") as ServiceOperator["serviceType"],
+    websiteUrl: data.website_url ?? undefined,
+    source: data.source,
+    score: data.score,
+    priority: (data.priority ?? "good") as ServiceOperator["priority"],
+    profileStatus: data.profile_status ?? undefined,
+    scrapedAt: data.scraped_at,
+  };
+}
+
 export async function listServiceOperators(
   filters: ServiceOperatorFilters = {}
 ): Promise<ServiceOperator[]> {

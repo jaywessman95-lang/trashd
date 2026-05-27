@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { SoldHomeLead } from "@/lib/sold-homes/types";
 import { RealtorCard } from "@/components/realtor-card";
 
-type SortKey = "priority" | "score" | "saleType" | "agentName" | "address" | "city" | "salePrice" | "soldDate" | "agentBrokerage" | "scrapedAt";
+type SortKey = "priority" | "score" | "saleType" | "agentName" | "address" | "city" | "salePrice" | "soldDate" | "agentBrokerage" | "scrapedAt" | "bedrooms";
 type SortDir = "asc" | "desc";
 
 const PRIORITY_RANK: Record<string, number> = { hot_now: 3, strong: 2, good: 1 };
@@ -31,9 +31,29 @@ function sortHomes(homes: SoldHomeLead[], key: SortKey, dir: SortDir): SoldHomeL
       case "soldDate":     cmp = Date.parse(a.soldDate) - Date.parse(b.soldDate); break;
       case "agentBrokerage": cmp = (a.agentBrokerage ?? "").localeCompare(b.agentBrokerage ?? ""); break;
       case "scrapedAt":     cmp = Date.parse(a.scrapedAt ?? "0") - Date.parse(b.scrapedAt ?? "0"); break;
+      case "bedrooms":      cmp = (a.bedrooms ?? 0) - (b.bedrooms ?? 0); break;
     }
     return dir === "asc" ? cmp : -cmp;
   });
+}
+
+/** Parse a date string as local midnight to avoid UTC timezone offset on date-only values. */
+function parseDateLocal(dateStr: string): Date {
+  const d = dateStr.slice(0, 10);
+  const [y, m, day] = d.split("-").map(Number);
+  return new Date(y, m - 1, day);
+}
+
+function daysAgoLabel(dateStr: string): string {
+  const dt = parseDateLocal(dateStr);
+  const days = Math.floor((Date.now() - dt.getTime()) / 86_400_000);
+  if (days <= 0) return "Today";
+  if (days === 1) return "1d ago";
+  return `${days}d ago`;
+}
+
+function dateLabel(dateStr: string): string {
+  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(parseDateLocal(dateStr));
 }
 
 function timeAgo(dateStr: string): string {
@@ -137,6 +157,7 @@ export function RealtorSoldTable({ homes }: Props) {
               <th>Email</th>
               <Th col="address"        active={sortKey === "address"}        sortDir={sortDir} onSort={handleSort}>Address</Th>
               <Th col="saleType"       active={sortKey === "saleType"}       sortDir={sortDir} onSort={handleSort}>Type</Th>
+              <Th col="bedrooms"       active={sortKey === "bedrooms"}       sortDir={sortDir} onSort={handleSort}>Beds</Th>
               <Th col="agentName"      active={sortKey === "agentName"}      sortDir={sortDir} onSort={handleSort}>Agent</Th>
               <Th col="salePrice"      active={sortKey === "salePrice"}      sortDir={sortDir} onSort={handleSort}>Sale Price</Th>
               <Th col="agentBrokerage" active={sortKey === "agentBrokerage"} sortDir={sortDir} onSort={handleSort}>Brokerage</Th>
@@ -146,14 +167,14 @@ export function RealtorSoldTable({ homes }: Props) {
           </thead>
           <tbody>
             {sorted.map((home) => {
-              const ago = timeAgo(home.soldDate);
-              const soldDt = new Date(home.soldDate);
-              const dateLabel = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(soldDt);
-              const timeLabel = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", hour12: true }).format(soldDt);
+              const soldAgo = home.contactOnly ? "—" : daysAgoLabel(home.soldDate);
+              const soldDate = home.contactOnly ? "" : dateLabel(home.soldDate);
               const scrapeAgo = home.scrapedAt ? timeAgo(home.scrapedAt) : "—";
               const scrapeDt = home.scrapedAt ? new Date(home.scrapedAt) : null;
-              const scrapeDateLabel = scrapeDt ? new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(scrapeDt) : "";
-              const scrapeTimeLabel = scrapeDt ? new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", hour12: true }).format(scrapeDt) : "";
+              const scrapeDateStr = scrapeDt
+                ? new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(scrapeDt)
+                : "";
+              const address = home.address?.trim() || "";
               return (
                 <tr key={home.id}>
                   <td>
@@ -169,8 +190,8 @@ export function RealtorSoldTable({ homes }: Props) {
                       <span className="no-contact">—</span>
                     ) : (
                       <>
-                        <span className="sold-time-ago">{ago}</span>
-                        <span className="sold-time-date">{dateLabel} {timeLabel}</span>
+                        <span className="sold-time-ago">{soldAgo}</span>
+                        <span className="sold-time-date">{soldDate}</span>
                       </>
                     )}
                   </td>
@@ -212,14 +233,18 @@ export function RealtorSoldTable({ homes }: Props) {
                   <td>
                     {home.contactOnly ? (
                       <span className="contact-only-tag">Contact Only</span>
-                    ) : home.listingUrl ? (
-                      <a className="lead-table-title-link" href={home.listingUrl} rel="noreferrer" target="_blank">
-                        <div className="lead-table-title">{home.address}</div>
-                      </a>
+                    ) : address ? (
+                      home.listingUrl ? (
+                        <a className="lead-table-title-link" href={home.listingUrl} rel="noreferrer" target="_blank">
+                          <div className="lead-table-title">{address}</div>
+                        </a>
+                      ) : (
+                        <div className="lead-table-title">{address}</div>
+                      )
                     ) : (
-                      <div className="lead-table-title">{home.address}</div>
+                      <span className="no-contact">—</span>
                     )}
-                    {!home.contactOnly && <div className="lead-table-source">{home.zip ?? ""}</div>}
+                    {!home.contactOnly && address && <div className="lead-table-source">{home.zip ?? ""}</div>}
                   </td>
                   <td>
                     <span className={`sale-type-badge sale-type-${home.saleType}`}>
@@ -227,9 +252,14 @@ export function RealtorSoldTable({ homes }: Props) {
                     </span>
                     {home.cashSale ? <span className="cash-badge">Cash</span> : null}
                   </td>
+                  <td className="lead-table-meta lead-table-beds">
+                    {home.bedrooms != null ? home.bedrooms : "—"}
+                  </td>
                   <td className="lead-table-meta">{home.agentName ?? "—"}</td>
                   <td className="lead-table-meta realtor-price">{home.contactOnly || home.salePrice === 0 ? "—" : formatPrice(home.salePrice)}</td>
-                  <td className="lead-table-meta">{home.agentBrokerage ?? "—"}</td>
+                  <td className="lead-table-meta lead-table-brokerage" title={home.agentBrokerage ?? undefined}>
+                    <span className="brokerage-truncate">{home.agentBrokerage ?? "—"}</span>
+                  </td>
                   <td>
                     <button
                       className={`small-button copy-msg-btn${copied === `msg-${home.id}` ? " copied" : ""}`}
@@ -243,7 +273,7 @@ export function RealtorSoldTable({ homes }: Props) {
                     {scrapeDt ? (
                       <>
                         <span className="sold-time-ago">{scrapeAgo}</span>
-                        <span className="sold-time-date">{scrapeDateLabel} {scrapeTimeLabel}</span>
+                        <span className="sold-time-date">{scrapeDateStr}</span>
                       </>
                     ) : <span className="no-contact">—</span>}
                   </td>
@@ -252,7 +282,7 @@ export function RealtorSoldTable({ homes }: Props) {
             })}
             {!homes.length ? (
               <tr>
-                <td className="lead-table-empty" colSpan={13}>No listings match these filters.</td>
+                <td className="lead-table-empty" colSpan={14}>No listings match these filters.</td>
               </tr>
             ) : null}
           </tbody>

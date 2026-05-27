@@ -57,6 +57,11 @@ async function getGmailAccessToken(): Promise<string> {
   return data.access_token;
 }
 
+function mimeEncodeSubject(subject: string): string {
+  if (/^[\x00-\x7F]*$/.test(subject)) return subject;
+  return `=?UTF-8?B?${Buffer.from(subject, "utf-8").toString("base64")}?=`;
+}
+
 function buildRawMessage(email: LeadAlertEmail): string {
   if (!env.GMAIL_FROM_EMAIL) {
     throw new Error("Missing GMAIL_FROM_EMAIL.");
@@ -65,11 +70,12 @@ function buildRawMessage(email: LeadAlertEmail): string {
   const message = [
     `From: ${env.GMAIL_FROM_EMAIL}`,
     `To: ${email.to}`,
-    `Subject: ${email.subject}`,
+    `Subject: ${mimeEncodeSubject(email.subject)}`,
     "MIME-Version: 1.0",
     "Content-Type: text/plain; charset=utf-8",
+    "Content-Transfer-Encoding: base64",
     "",
-    email.text
+    Buffer.from(email.text, "utf-8").toString("base64")
   ].join("\r\n");
 
   return Buffer.from(message).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");

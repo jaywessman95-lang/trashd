@@ -61,6 +61,7 @@ export async function GET(request: Request) {
         agent_brokerage: l.agentBrokerage ?? null,
         agent_image_url: l.agentImageUrl ?? null,
         agent_profile_status: l.agentProfileStatus ?? "unverified",
+        bedrooms: l.bedrooms ?? null,
         updated_at: new Date().toISOString(),
       }));
 

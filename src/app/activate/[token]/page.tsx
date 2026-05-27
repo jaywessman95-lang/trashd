@@ -23,14 +23,15 @@ export default async function ActivatePage({ params }: Props) {
     .maybeSingle();
 
   if (contact) {
+    const editUrl = `/realtors/${contact.id}?token=${token}`;
     if (contact.profile_status === "verified") {
-      return <ActivateResult status="already" name={contact.name} type="realtor" />;
+      return <ActivateResult status="already" name={contact.name} type="realtor" profileUrl={editUrl} />;
     }
     await db
       .from("realtor_contacts")
       .update({ profile_status: "verified" })
       .eq("id", contact.id);
-    return <ActivateResult status="success" name={contact.name} type="realtor" />;
+    return <ActivateResult status="success" name={contact.name} type="realtor" profileUrl={editUrl} />;
   }
 
   // Check service_operators
@@ -41,14 +42,15 @@ export default async function ActivatePage({ params }: Props) {
     .maybeSingle();
 
   if (operator) {
+    const editUrl = `/operators/${operator.id}?token=${token}`;
     if (operator.profile_status === "verified") {
-      return <ActivateResult status="already" name={operator.company} type="operator" />;
+      return <ActivateResult status="already" name={operator.company} type="operator" profileUrl={editUrl} />;
     }
     await db
       .from("service_operators")
       .update({ profile_status: "verified" })
       .eq("id", operator.id);
-    return <ActivateResult status="success" name={operator.company} type="operator" />;
+    return <ActivateResult status="success" name={operator.company} type="operator" profileUrl={editUrl} />;
   }
 
   return <ActivateResult status="invalid" />;
@@ -58,11 +60,13 @@ function ActivateResult({
   status,
   name,
   type,
+  profileUrl,
   message,
 }: {
   status: "success" | "already" | "invalid" | "error";
   name?: string | null;
   type?: "realtor" | "operator";
+  profileUrl?: string;
   message?: string;
 }) {
   const displayName = name ?? (type === "realtor" ? "Your realtor profile" : "Your business profile");
@@ -73,13 +77,18 @@ function ActivateResult({
         {status === "success" && (
           <div className="activate-card activate-success">
             <div className="activate-icon">✓</div>
-            <h1>Profile Verified!</h1>
+            <h1>You&apos;re Verified!</h1>
             <p>
               <strong>{displayName}</strong> is now verified on Trashd.
               {type === "realtor"
                 ? " Junk removal operators in Orange County can now see and contact you directly."
                 : " Realtors can now see your business listed as a verified service provider."}
             </p>
+            {profileUrl && (
+              <a className="activate-profile-link" href={profileUrl}>
+                View &amp; Edit Your Profile &rarr;
+              </a>
+            )}
             <p className="activate-muted">No account needed — your profile is live.</p>
           </div>
         )}
@@ -88,6 +97,11 @@ function ActivateResult({
             <div className="activate-icon">✓</div>
             <h1>Already Verified</h1>
             <p><strong>{displayName}</strong> is already verified on Trashd.</p>
+            {profileUrl && (
+              <a className="activate-profile-link" href={profileUrl}>
+                View &amp; Edit Your Profile &rarr;
+              </a>
+            )}
           </div>
         )}
         {status === "invalid" && (

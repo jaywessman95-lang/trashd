@@ -126,8 +126,10 @@ function parseOneListing(raw: any, city: string): Omit<SoldHomeLead, "score" | "
   const agentPhone = agent.phone ?? agent.mobile ?? agent.cell ?? undefined;
   const agentEmail = agent.email ?? undefined;
   const agentBrokerage = agent.company ?? agent.brokerage ?? agent.office ?? undefined;
-  const agentImage = agent.photo ?? agent.image ?? agent.avatar ?? agent.photo_url ?? undefined;
-  const listingUrl = raw.url ?? raw.listing_url ?? raw.listingUrl ?? raw.permalink ?? undefined;
+  const agentImage = agent.photo ?? raw.agent_photo ?? agent.image ?? agent.avatar ?? agent.photo_url ?? undefined;
+  const listingUrl = raw.url ?? raw.listing_url ?? raw.listingUrl ?? raw.permalink ?? raw.detail_url ?? raw.detailUrl ?? undefined;
+  const bedroomsRaw = raw.beds ?? raw.bedrooms ?? raw.bedroom_count ?? raw.num_beds ?? raw.bed_count ?? agent.beds ?? undefined;
+  const bedrooms = bedroomsRaw != null ? Number(bedroomsRaw) || undefined : undefined;
 
   const id = crypto
     .createHash("md5")
@@ -153,6 +155,7 @@ function parseOneListing(raw: any, city: string): Omit<SoldHomeLead, "score" | "
     agentBrokerage: agentBrokerage ? String(agentBrokerage) : undefined,
     agentImageUrl: agentImage ? String(agentImage) : undefined,
     scrapedAt: new Date().toISOString(),
+    bedrooms,
   };
 }
 

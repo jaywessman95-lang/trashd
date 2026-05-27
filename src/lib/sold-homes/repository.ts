@@ -2,6 +2,39 @@ import { sampleSoldHomes } from "@/lib/sold-homes/sample-data";
 import type { SoldHomeFilters, SoldHomeLead } from "@/lib/sold-homes/types";
 import { env } from "@/lib/env";
 
+export type RealtorContactProfile = {
+  id: string;
+  name?: string;
+  phone?: string;
+  email?: string;
+  brokerage?: string;
+  imageUrl?: string;
+  aiBio?: string;
+  profileStatus: string;
+  source: string;
+  scrapedAt: string;
+};
+
+export async function getRealtorContact(id: string): Promise<RealtorContactProfile | null> {
+  if (!env.NEXT_PUBLIC_SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return null;
+  const { createSupabaseAdminClient } = await import("@/lib/supabase/admin");
+  const db = createSupabaseAdminClient();
+  const { data } = await db.from("realtor_contacts").select("*").eq("id", id).maybeSingle();
+  if (!data) return null;
+  return {
+    id: data.id,
+    name: data.name ?? undefined,
+    phone: data.phone ?? undefined,
+    email: data.email ?? undefined,
+    brokerage: data.brokerage ?? undefined,
+    imageUrl: data.image_url ?? undefined,
+    aiBio: data.ai_bio ?? undefined,
+    profileStatus: data.profile_status ?? "unverified",
+    source: data.source,
+    scrapedAt: data.scraped_at,
+  };
+}
+
 async function listFromSupabase(filters: SoldHomeFilters): Promise<SoldHomeLead[]> {
   const { createSupabaseAdminClient } = await import("@/lib/supabase/admin");
   const db = createSupabaseAdminClient();
@@ -53,6 +86,7 @@ async function listFromSupabase(filters: SoldHomeFilters): Promise<SoldHomeLead[
     agentImageUrl: r.agent_image_url ?? undefined,
     agentProfileStatus: r.agent_profile_status ?? "unverified",
     scrapedAt: r.created_at,
+    bedrooms: r.bedrooms ?? undefined,
   }));
 
   // Pull contact-only leads (no sold listing, just scraped agent info)
