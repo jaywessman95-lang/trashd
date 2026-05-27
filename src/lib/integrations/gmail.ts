@@ -12,8 +12,8 @@ type GoogleTokenResponse = {
   error_description?: string;
 };
 
-export async function sendLeadAlert(email: LeadAlertEmail): Promise<void> {
-  const accessToken = await getGmailAccessToken();
+/** Returns the sent message ID so callers can apply labels. */
+async function sendRaw(email: LeadAlertEmail, accessToken: string): Promise<string> {
   const raw = buildRawMessage(email);
   const response = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
     method: "POST",
@@ -28,6 +28,42 @@ export async function sendLeadAlert(email: LeadAlertEmail): Promise<void> {
     const text = await response.text();
     throw new Error(`Gmail send failed (${response.status}): ${text}`);
   }
+  const data = (await response.json()) as { id?: string };
+  return data.id ?? "";
+}
+
+export async function sendLeadAlert(email: LeadAlertEmail): Promise<void> {
+  const accessToken = await getGmailAccessToken();
+  await sendRaw(email, accessToken);
+}
+
+/** Find an existing Gmail label by name, or create it if absent. Returns the label ID. */
+async function getOrCreateLabel(name: string, accessToken: string): Promise<string> {
+  const listRes = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/labels", {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  if (listRes.ok) {
+    const { labels } = (await listRes.json()) as { labels?: { id: string; name: string }[] };
+    const existing = (labels ?? []).find((l) => l.name === name);
+    if (existing) return existing.id;
+  }
+  // Create it
+  const createRes = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/labels", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ name, labelListVisibility: "labelShow", messageListVisibility: "show" })
+  });
+  const created = (await createRes.json()) as { id?: string };
+  return created.id ?? "";
+}
+
+async function applyLabel(messageId: string, labelId: string, accessToken: string): Promise<void> {
+  if (!messageId || !labelId) return;
+  await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}/modify`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ addLabelIds: [labelId] })
+  });
 }
 
 async function getGmailAccessToken(): Promise<string> {
@@ -139,7 +175,10 @@ export async function sendRealtorOutreach(
   activationToken?: string
 ): Promise<void> {
   const { subject, body } = buildRealtorOutreachEmail(agentName, activationToken);
-  await sendLeadAlert({ to, subject, text: body });
+  const accessToken = await getGmailAccessToken();
+  const messageId = await sendRaw({ to, subject, text: body }, accessToken);
+  const labelId = await getOrCreateLabel("Outreach Realtor", accessToken);
+  await applyLabel(messageId, labelId, accessToken);
 }
 
 export async function sendOperatorOutreach(
@@ -148,5 +187,8 @@ export async function sendOperatorOutreach(
   activationToken?: string
 ): Promise<void> {
   const { subject, body } = buildOperatorOutreachEmail(companyName, activationToken);
-  await sendLeadAlert({ to, subject, text: body });
+  const accessToken = await getGmailAccessToken();
+  const messageId = await sendRaw({ to, subject, text: body }, accessToken);
+  const labelId = await getOrCreateLabel("Outreach Junk", accessToken);
+  await applyLabel(messageId, labelId, accessToken);
 }
