@@ -1,6 +1,14 @@
-import type { ServiceOperatorFilters, ServiceType } from "@/lib/service-operators/types";
+import type { ServiceOperatorFilters, ServiceType, ContactFilter } from "@/lib/service-operators/types";
 
 const SERVICE_TYPES: ServiceType[] = ["junk_removal", "movers", "both"];
+
+const CONTACT_FILTERS: { value: ContactFilter | ""; label: string }[] = [
+  { value: "email_and_phone", label: "Email & Phone" },
+  { value: "email_only",      label: "Email only" },
+  { value: "phone_only",      label: "Phone only" },
+  { value: "no_contact",      label: "No contact info" },
+  { value: "",                label: "Show all" },
+];
 
 type Props = {
   filters: ServiceOperatorFilters;
@@ -27,10 +35,11 @@ export function ServiceOperatorFilterPanel({ filters, count }: Props) {
           </select>
         </label>
         <label>
-          Has email
-          <select defaultValue={filters.hasEmail ? "1" : ""} name="soHasEmail">
-            <option value="">Any</option>
-            <option value="1">Email only</option>
+          Contact info
+          <select defaultValue={filters.contactFilter ?? "email_and_phone"} name="soContactFilter">
+            {CONTACT_FILTERS.map(({ value, label }) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
           </select>
         </label>
         <label>
@@ -57,13 +66,15 @@ export function ServiceOperatorFilterPanel({ filters, count }: Props) {
   );
 }
 
+const contactFilterValues = ["phone_only", "email_only", "email_and_phone", "no_contact"] as const;
+
 export function parseOperatorFilters(
   params: Record<string, string | string[] | undefined>
 ): ServiceOperatorFilters {
   return {
     city: parseString(params.soCity),
     serviceType: parseEnum<ServiceType>(params.soServiceType, SERVICE_TYPES),
-    hasEmail: params.soHasEmail === "1" ? true : undefined,
+    contactFilter: parseEnum<ContactFilter>(params.soContactFilter, contactFilterValues) ?? "email_and_phone",
     sort: parseEnum(params.soSort, ["score", "newest", "name"] as const) ?? "score",
   };
 }

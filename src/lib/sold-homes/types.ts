@@ -32,11 +32,14 @@ export type SoldHomeLead = {
   bedrooms?: number;
 };
 
+export type ContactFilter = "phone_only" | "email_only" | "email_and_phone" | "no_contact";
+
 export type SoldHomeFilters = {
   city?: string;
   minPrice?: number;
   soldWithinHours?: number;
   propertyType?: PropertyType;
+  contactFilter?: ContactFilter;
   sort?: "newest" | "highest_price" | "lowest_price" | "score";
 };
 

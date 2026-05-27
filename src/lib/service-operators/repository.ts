@@ -42,7 +42,12 @@ export async function listServiceOperators(
 
   if (filters.city) q = q.ilike("city", `%${filters.city}%`);
   if (filters.serviceType) q = q.eq("service_type", filters.serviceType);
-  if (filters.hasEmail) q = q.not("email", "is", null);
+
+  const cf = filters.contactFilter ?? "email_and_phone";
+  if (cf === "phone_only") q = q.not("phone", "is", null);
+  else if (cf === "email_only") q = q.not("email", "is", null);
+  else if (cf === "email_and_phone") q = q.not("phone", "is", null).not("email", "is", null);
+  else if (cf === "no_contact") q = q.is("phone", null).is("email", null);
 
   if (filters.sort === "newest") {
     q = q.order("scraped_at", { ascending: false });

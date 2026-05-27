@@ -1,4 +1,12 @@
-import type { SoldHomeFilters, PropertyType } from "@/lib/sold-homes/types";
+import type { SoldHomeFilters, PropertyType, ContactFilter } from "@/lib/sold-homes/types";
+
+const CONTACT_FILTERS: { value: ContactFilter | ""; label: string }[] = [
+  { value: "email_and_phone", label: "Email & Phone" },
+  { value: "email_only",      label: "Email only" },
+  { value: "phone_only",      label: "Phone only" },
+  { value: "no_contact",      label: "No contact info" },
+  { value: "",                label: "Show all" },
+];
 
 export const propertyTypes: PropertyType[] = ["single_family", "condo", "townhouse", "multi_family"];
 
@@ -49,6 +57,14 @@ export function SoldHomeFilterPanel({ filters, homeCount }: SoldHomeFilterPanelP
           </select>
         </label>
         <label>
+          Contact info
+          <select defaultValue={filters.contactFilter ?? "email_and_phone"} name="shContactFilter">
+            {CONTACT_FILTERS.map(({ value, label }) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+        </label>
+        <label>
           Sort
           <select defaultValue={filters.sort ?? "score"} name="shSort">
             <option value="score">Best score</option>
@@ -73,12 +89,15 @@ export function SoldHomeFilterPanel({ filters, homeCount }: SoldHomeFilterPanelP
   );
 }
 
+const contactFilterValues = ["phone_only", "email_only", "email_and_phone", "no_contact"] as const;
+
 export function parseSoldHomeFilters(params: Record<string, string | string[] | undefined>): SoldHomeFilters {
   return {
     city: parseString(params.shCity),
     minPrice: parseOptionalNumber(params.shMinPrice),
     soldWithinHours: parseOptionalNumber(params.shSoldWithin),
     propertyType: parseEnum<PropertyType>(params.shPropertyType, propertyTypes),
+    contactFilter: parseEnum<ContactFilter>(params.shContactFilter, contactFilterValues) ?? "email_and_phone",
     sort: parseEnum(params.shSort, ["newest", "highest_price", "lowest_price", "score"] as const) ?? "score"
   };
 }

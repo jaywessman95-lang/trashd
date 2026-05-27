@@ -30,10 +30,12 @@ export type ServiceOperator = {
   scrapedAt?: string;
 };
 
+export type ContactFilter = "phone_only" | "email_only" | "email_and_phone" | "no_contact";
+
 export type ServiceOperatorFilters = {
   city?: string;
   serviceType?: ServiceType;
-  hasEmail?: boolean;
+  contactFilter?: ContactFilter;
   sort?: "score" | "newest" | "name";
 };
 

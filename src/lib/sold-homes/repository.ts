@@ -50,6 +50,12 @@ async function listFromSupabase(filters: SoldHomeFilters): Promise<SoldHomeLead[
   }
   if (filters.propertyType) q = q.eq("property_type", filters.propertyType);
 
+  const cf = filters.contactFilter ?? "email_and_phone";
+  if (cf === "phone_only") q = q.not("agent_phone", "is", null);
+  else if (cf === "email_only") q = q.not("agent_email", "is", null);
+  else if (cf === "email_and_phone") q = q.not("agent_phone", "is", null).not("agent_email", "is", null);
+  else if (cf === "no_contact") q = q.is("agent_phone", null).is("agent_email", null);
+
   if (filters.sort === "newest") {
     q = q.order("sold_date", { ascending: false });
   } else if (filters.sort === "highest_price") {
