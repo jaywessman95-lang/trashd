@@ -40,7 +40,8 @@ async function listFromSupabase(filters: SoldHomeFilters): Promise<SoldHomeLead[
   const db = createSupabaseAdminClient();
 
   // Pull sold listings
-  let q = db.from("realtor_sold_listings").select("*");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let q: any = db.from("realtor_sold_listings").select("*");
 
   if (filters.city) q = q.ilike("city", `%${filters.city}%`);
   if (filters.minPrice) q = q.gte("sale_price", filters.minPrice);
@@ -69,7 +70,8 @@ async function listFromSupabase(filters: SoldHomeFilters): Promise<SoldHomeLead[
   const { data: listingRows, error: listingErr } = await q.limit(200);
   if (listingErr) throw listingErr;
 
-  const listings: SoldHomeLead[] = (listingRows ?? []).map((r) => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const listings: SoldHomeLead[] = (listingRows ?? []).map((r: any) => ({
     id: r.id,
     address: r.address,
     city: r.city,
