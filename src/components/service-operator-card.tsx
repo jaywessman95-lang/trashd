@@ -3,6 +3,11 @@
 import { useState } from "react";
 import type { ServiceOperator } from "@/lib/service-operators/types";
 
+const AGGREGATOR_RE = /yelp\.com|google\.|facebook\.|twitter\.com|instagram\.com|linkedin\.com|bbb\.org|yp\.com|angi(e?s?list)?\.com|homeadvisor|thumbtack|bark\.com|houzz\.|tripadvisor|manta\.|superpages|dexknows|foursquare|whitepages|yellowpages|porch\.com|cloudflare|amazonaws|googleapis|gstatic/i;
+function isValidWebsite(url: string | undefined): url is string {
+  return !!url && url.startsWith("http") && !AGGREGATOR_RE.test(url);
+}
+
 const PRIORITY_LABEL: Record<string, string> = {
   hot_now: "Hot Now",
   strong: "Strong",
@@ -159,7 +164,7 @@ export function ServiceOperatorCard({ operator: op }: Props) {
         >
           {copied === `pitch-${op.id}` ? "✓ Copied" : "Copy Referral"}
         </button>
-        {op.websiteUrl && (
+        {isValidWebsite(op.websiteUrl) && (
           <a
             className="small-button"
             href={op.websiteUrl}

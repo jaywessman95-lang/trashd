@@ -4,6 +4,11 @@ import { useState } from "react";
 import type { ServiceOperator } from "@/lib/service-operators/types";
 import { ServiceOperatorCard } from "@/components/service-operator-card";
 
+const AGGREGATOR_RE = /yelp\.com|google\.|facebook\.|twitter\.com|instagram\.com|linkedin\.com|bbb\.org|yp\.com|angi(e?s?list)?\.com|homeadvisor|thumbtack|bark\.com|houzz\.|tripadvisor|manta\.|superpages|dexknows|foursquare|whitepages|yellowpages|porch\.com|cloudflare|amazonaws|googleapis|gstatic/i;
+function isValidWebsite(url: string | undefined): url is string {
+  return !!url && url.startsWith("http") && !AGGREGATOR_RE.test(url);
+}
+
 type SortKey = "priority" | "score" | "company" | "city" | "serviceType" | "scrapedAt";
 type SortDir = "asc" | "desc";
 type ViewMode = "cards" | "table";
@@ -149,7 +154,7 @@ export function ServiceOperatorTable({ operators }: Props) {
                     </td>
                     <td>
                       <div className="lead-table-title">{op.company ?? "—"}</div>
-                      {op.websiteUrl && (
+                      {isValidWebsite(op.websiteUrl) && (
                         <div className="lead-table-source">
                           <a href={op.websiteUrl} target="_blank" rel="noreferrer" className="phone-link">
                             website

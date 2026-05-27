@@ -47,9 +47,28 @@ function extractPhone(html: string): string | undefined {
   return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
 }
 
+const AGGREGATOR_RE = /yelp\.com|google\.|facebook\.|twitter\.com|instagram\.com|linkedin\.com|bbb\.org|yp\.com|angi(e?s?list)?\.com|homeadvisor|thumbtack|bark\.com|houzz\.|nextdoor\.|tripadvisor|manta\.|superpages|dexknows|foursquare|citysearch|whitepages|yellowpages|porch\.com|buildzoom|networx|servicemagic|cloudflare|amazonaws|googleapis|gstatic|cdn\.|\.png|\.jpg|\.gif|\.js$|\.css$/i;
+
+function isRealBusinessUrl(url: string): boolean {
+  return url.startsWith("http") && !AGGREGATOR_RE.test(url) && url.length < 200;
+}
+
 function extractWebsite(html: string): string | undefined {
-  const m = html.match(/(?:href|url)="(https?:\/\/(?!(?:www\.)?yellowpages)[^"]+)"/);
-  return m?.[1];
+  // Priority 1: JSON-LD structured data "url" field
+  for (const m of html.matchAll(/"url"\s*:\s*"(https?:\/\/[^"]{5,150})"/g)) {
+    if (isRealBusinessUrl(m[1])) return m[1].split("?")[0].replace(/\/$/, "") || m[1];
+  }
+
+  // Priority 2: itemprop="url"
+  const itemprop = html.match(/itemprop="url"[^>]*(?:content|href)="(https?:\/\/[^"]{5,150})"/);
+  if (itemprop?.[1] && isRealBusinessUrl(itemprop[1])) return itemprop[1];
+
+  // Priority 3: href near "website" or "web" anchor text
+  const nearWebsite = html.match(/href="(https?:\/\/[^"]{5,150})"[^>]*>[^<]{0,30}(?:website|visit site|web)<\/a>/i)
+    ?? html.match(/(?:website|visit site|web)[^<]{0,60}href="(https?:\/\/[^"]{5,150})"/i);
+  if (nearWebsite?.[1] && isRealBusinessUrl(nearWebsite[1])) return nearWebsite[1];
+
+  return undefined;
 }
 
 function extractCompany(html: string): string | undefined {
