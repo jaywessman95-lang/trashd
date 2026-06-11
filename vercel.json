@@ -1,8 +1,20 @@
 {
   "crons": [
     {
+      "path": "/api/cron/scrape",
+      "schedule": "0 14 * * *"
+    },
+    {
       "path": "/api/cron/scrape-realtors",
-      "schedule": "0 13 * * *"
+      "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/cron/scrape-contacts",
+      "schedule": "0 17 * * *"
+    },
+    {
+      "path": "/api/cron/scrape-maps-vendors",
+      "schedule": "0 10 * * 1"
     }
   ]
 }

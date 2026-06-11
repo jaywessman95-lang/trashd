@@ -1,5 +1,6 @@
 import { fetchWithZyte } from "@/lib/integrations/zyte";
-import { scoreOperator, isCustomDomain, detectServiceType } from "../types";
+import { scoreOperator, isCustomDomain, detectServiceType, isStorageCompany } from "../types";
+import { computeVendorScore, tierToPriority } from "../scoring";
 import type { ServiceOperator } from "../types";
 import crypto from "crypto";
 
@@ -91,6 +92,34 @@ function extractAddress(html: string): { address?: string; city?: string; zip?: 
   };
 }
 
+function extractRating(html: string): { rating?: number; reviewCount?: number } {
+  // schema.org JSON-LD: "ratingValue":"4.5","reviewCount":"38"
+  const rv = html.match(/"ratingValue"\s*:\s*"?([\d.]+)"?/)?.[1];
+  const rc = html.match(/"reviewCount"\s*:\s*"?(\d+)"?/)?.[1] ??
+             html.match(/"ratingCount"\s*:\s*"?(\d+)"?/)?.[1];
+  // itemprop fallbacks
+  const rvFb = html.match(/itemprop="ratingValue"[^>]*content="([\d.]+)"/)?.[1] ??
+               html.match(/itemprop="ratingValue"[^>]*>([\d.]+)</)?.[1];
+  const rcFb = html.match(/itemprop="reviewCount"[^>]*content="(\d+)"/)?.[1] ??
+               html.match(/itemprop="reviewCount"[^>]*>(\d+)</)?.[1];
+  const rating = parseFloat(rv ?? rvFb ?? "");
+  const reviewCount = parseInt(rc ?? rcFb ?? "", 10);
+  return {
+    rating: Number.isFinite(rating) && rating > 0 ? rating : undefined,
+    reviewCount: Number.isFinite(reviewCount) && reviewCount > 0 ? reviewCount : undefined,
+  };
+}
+
+function extractHours(html: string): string | undefined {
+  // Look for open/close patterns near "hours" text
+  const m = html.match(/(?:Open|Closes?)\s+(?:24\s*[Hh]ours|24\/7|\d{1,2}(?::\d{2})?\s*[APap][Mm])/);
+  return m?.[0]?.trim();
+}
+
+function extractHasInsured(html: string): boolean {
+  return /licensed|insured|bonded|liability/i.test(html);
+}
+
 async function scrapeSearchPage(slug: string, category: string, page: number): Promise<string[]> {
   const base = `https://www.yellowpages.com/${slug}/${category}`;
   const url = page === 1 ? base : `${base}?page=${page}`;
@@ -124,12 +153,47 @@ async function scrapeProfile(
 
   const { address, city: profileCity, zip } = extractAddress(html);
   const company = extractCompany(html);
+  if (company && isStorageCompany(company)) return null;
+
   const websiteUrl = extractWebsite(html);
   const customDomain = email ? isCustomDomain(email) : false;
-  const { score, priority } = scoreOperator(!!email, !!phone, customDomain);
   const serviceType = detectServiceType(category + " " + (company ?? ""));
+  const { rating, reviewCount } = extractRating(html);
+  const hoursDescription = extractHours(html);
+  const hasLicensedInsured = extractHasInsured(html);
 
   const id = crypto.createHash("md5").update(`yp::${email ?? phone ?? profileUrl}`).digest("hex");
+
+  // Use 3-pillar scoring when we have rating/review data; fall back to contact-based
+  let score: number;
+  let priority: ServiceOperator["priority"];
+  let availabilityScore: number | undefined;
+  let reliabilityScore: number | undefined;
+  let professionalismScore: number | undefined;
+  let confidenceTier: ServiceOperator["confidenceTier"] | undefined;
+
+  if (rating !== undefined && reviewCount !== undefined) {
+    const result = computeVendorScore({
+      hoursDescription,
+      googleReviewCount: reviewCount,
+      googleMapsRating: rating,
+      hasLicensedInsured,
+      websiteUrl,
+      phone,
+      email,
+    });
+    score = result.scores.total;
+    priority = tierToPriority(result.tier) as ServiceOperator["priority"];
+    availabilityScore = result.scores.availability;
+    reliabilityScore = result.scores.reliability;
+    professionalismScore = result.scores.professionalism;
+    confidenceTier = result.tier;
+  } else {
+    const base = scoreOperator(!!email, !!phone, customDomain);
+    score = base.score + (hasLicensedInsured ? 5 : 0) + (websiteUrl ? 5 : 0);
+    score = Math.min(100, score);
+    priority = base.priority;
+  }
 
   return {
     id,
@@ -147,6 +211,13 @@ async function scrapeProfile(
     priority,
     profileStatus: "unverified",
     scrapedAt: new Date().toISOString(),
+    googleMapsRating: rating,
+    googleReviewCount: reviewCount,
+    hoursDescription,
+    availabilityScore,
+    reliabilityScore,
+    professionalismScore,
+    confidenceTier,
   };
 }
 

@@ -2,10 +2,9 @@ import { NextResponse } from "next/server";
 import { env } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { runContactScrapers } from "@/lib/sold-homes/scrapers/contacts";
-import { sendRealtorOutreach } from "@/lib/integrations/gmail";
+import { scheduleEmailsInWindow } from "@/lib/email-queue-helpers";
+import { DEFAULT_REALTOR_SCRAPE_SETTINGS } from "@/lib/sold-homes/types";
 import crypto from "crypto";
-
-const MAX_EMAILS_PER_RUN = 20;
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -34,8 +33,20 @@ export async function GET(request: Request) {
   }
   const sourcesParam = url.searchParams.get("sources");
   const sources = sourcesParam ? sourcesParam.split(",").map((s) => s.trim()) : undefined;
-  const maxPages = parseInt(url.searchParams.get("maxPages") ?? "10", 10);
-  const maxCities = parseInt(url.searchParams.get("maxCities") ?? "13", 10);
+  const maxPages = parseInt(url.searchParams.get("maxPages") ?? "3", 10);
+  const maxCities = parseInt(url.searchParams.get("maxCities") ?? "5", 10);
+  const maxEmails = parseInt(
+    url.searchParams.get("maxEmails") ?? String(DEFAULT_REALTOR_SCRAPE_SETTINGS.maxEmailsPerRun),
+    10,
+  );
+  const emailWindowStart = parseInt(
+    url.searchParams.get("emailWindowStart") ?? String(DEFAULT_REALTOR_SCRAPE_SETTINGS.emailWindowStart),
+    10,
+  );
+  const emailWindowEnd = parseInt(
+    url.searchParams.get("emailWindowEnd") ?? String(DEFAULT_REALTOR_SCRAPE_SETTINGS.emailWindowEnd),
+    10,
+  );
 
   let upserted = 0;
   let emailsSent = 0;
@@ -73,37 +84,41 @@ export async function GET(request: Request) {
         upserted += batch.length;
       }
 
-      // Send outreach emails to newly inserted contacts that have an email
-      if (env.GMAIL_CLIENT_ID && env.GMAIL_REFRESH_TOKEN) {
-        const { count: vendorCount } = await db
-          .from("service_operators")
-          .select("id", { count: "exact", head: true });
-
+      // Enqueue outreach emails with randomised send times spread across the PT window
+      if (maxEmails > 0 && env.GMAIL_CLIENT_ID && env.GMAIL_REFRESH_TOKEN) {
         const { data: toEmail } = await db
           .from("realtor_contacts")
           .select("id, name, email, verification_token")
           .not("email", "is", null)
           .is("onboarding_email_sent_at", null)
           .order("scraped_at", { ascending: false })
-          .limit(MAX_EMAILS_PER_RUN);
+          .limit(maxEmails);
 
-        for (const contact of toEmail ?? []) {
-          if (!contact.email) continue;
-          try {
-            await sendRealtorOutreach(
-              contact.email,
-              contact.name,
-              contact.verification_token ?? undefined,
-              vendorCount ?? undefined
-            );
+        const contacts = (toEmail ?? []).filter((c) => !!c.email);
+        const scheduledTimes = scheduleEmailsInWindow(contacts.length, emailWindowStart, emailWindowEnd);
+
+        if (scheduledTimes.length > 0) {
+          const queueRows = contacts.slice(0, scheduledTimes.length).map((c, i) => ({
+            type: "realtor",
+            recipient_id: c.id,
+            recipient_email: c.email,
+            recipient_name: c.name ?? null,
+            verification_token: c.verification_token ?? null,
+            scheduled_at: scheduledTimes[i].toISOString(),
+            status: "pending",
+          }));
+
+          const { error: qErr } = await db.from("email_queue").insert(queueRows);
+          if (qErr) {
+            lastEmailError = qErr.message;
+          } else {
+            // Mark contacts as queued so they won't be picked up again next run
+            const ids = contacts.slice(0, scheduledTimes.length).map((c) => c.id);
             await db
               .from("realtor_contacts")
               .update({ onboarding_email_sent_at: new Date().toISOString() })
-              .eq("id", contact.id);
-            emailsSent++;
-          } catch (emailErr) {
-            lastEmailError = emailErr instanceof Error ? emailErr.message
-              : ((emailErr as { message?: string })?.message ?? JSON.stringify(emailErr));
+              .in("id", ids);
+            emailsSent = queueRows.length;
           }
         }
       }
@@ -117,7 +132,7 @@ export async function GET(request: Request) {
     startedAt: nowUTC.toISOString(),
     ptHour,
     upserted,
-    emailsSent,
+    emailsQueued: emailsSent,
     bySource,
     error: runError,
     emailError: lastEmailError,

@@ -40,15 +40,22 @@ export type SoldHomeFilters = {
   soldWithinHours?: number;
   propertyType?: PropertyType;
   contactFilter?: ContactFilter;
+  verifiedOnly?: boolean;
   sort?: "newest" | "highest_price" | "lowest_price" | "score";
 };
 
 export type RealtorScrapeSettings = {
   maxContactsPerSession: number;
   maxDaysSold: number;
+  maxEmailsPerRun: number;
+  emailWindowStart: number;
+  emailWindowEnd: number;
 };
 
 export const DEFAULT_REALTOR_SCRAPE_SETTINGS: RealtorScrapeSettings = {
   maxContactsPerSession: 20,
-  maxDaysSold: 15
+  maxDaysSold: 15,
+  maxEmailsPerRun: 5,
+  emailWindowStart: 8,
+  emailWindowEnd: 18,
 };

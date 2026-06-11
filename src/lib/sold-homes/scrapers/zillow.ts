@@ -4,18 +4,24 @@ import type { SoldHomeLead, SaleType } from "@/lib/sold-homes/types";
 const URL = "https://www.zillow.com/orange-county-ca/sold/";
 
 type ZillowListing = {
-  zpid: number;
+  zpid: number | string;
   addressStreet?: string;
   addressCity?: string;
   addressState?: string;
   addressZipcode?: string;
   unformattedPrice?: number;
-  soldPrice?: number;
-  soldDate?: number;
+  beds?: number;
   homeType?: string;
   brokerName?: string;
   detailUrl?: string;
   statusType?: string;
+  hdpData?: {
+    homeInfo?: {
+      dateSold?: number;
+      homeType?: string;
+      bedrooms?: number;
+    };
+  };
 };
 
 function toSaleType(homeType: string | undefined): SaleType {
@@ -51,11 +57,13 @@ export async function scrapeZillow(
   for (const l of all) {
     if (!l.addressStreet || !l.unformattedPrice) continue;
 
-    const soldMs = l.soldDate ?? Date.now();
-    if (soldMs < cutoff) continue;
+    const soldMs = l.hdpData?.homeInfo?.dateSold ?? 0;
+    if (!soldMs || soldMs < cutoff) continue;
 
-    const soldDate = new Date(soldMs).toISOString();
-    const score = scoreZillowLead(l);
+    const soldDate = new Date(soldMs).toISOString().slice(0, 10);
+    const homeType = l.hdpData?.homeInfo?.homeType ?? l.homeType;
+    const bedrooms = l.beds ?? l.hdpData?.homeInfo?.bedrooms;
+    const score = scoreZillowLead(l, soldMs);
 
     leads.push({
       id: `zillow-${l.zpid}`,
@@ -65,36 +73,35 @@ export async function scrapeZillow(
       zip: l.addressZipcode,
       salePrice: l.unformattedPrice,
       soldDate,
-      propertyType: toPropertyType(l.homeType),
-      saleType: toSaleType(l.homeType),
+      propertyType: toPropertyType(homeType),
+      saleType: toSaleType(homeType),
       cashSale: false,
       score,
       priority: score >= 70 ? "hot_now" : score >= 50 ? "strong" : "good",
-      listingUrl: l.detailUrl ? `https://www.zillow.com${l.detailUrl}` : undefined,
+      listingUrl: l.detailUrl ?? undefined,
       source: "zillow",
       agentBrokerage: l.brokerName,
+      bedrooms,
     });
   }
 
   return leads;
 }
 
-function scoreZillowLead(l: ZillowListing): number {
+function scoreZillowLead(l: ZillowListing, soldMs: number): number {
   let s = 40;
   const price = l.unformattedPrice ?? 0;
-  // Higher-value homes = larger potential job
   if (price >= 1000000) s += 15;
   else if (price >= 600000) s += 10;
   else if (price >= 400000) s += 5;
 
-  // Recency boost
-  const daysAgo = (Date.now() - (l.soldDate ?? 0)) / 86400000;
+  const daysAgo = (Date.now() - soldMs) / 86400000;
   if (daysAgo <= 1) s += 20;
   else if (daysAgo <= 3) s += 15;
   else if (daysAgo <= 7) s += 8;
 
-  // Property type
-  if ((l.homeType ?? "").includes("SINGLE_FAMILY")) s += 10;
+  const homeType = l.hdpData?.homeInfo?.homeType ?? l.homeType ?? "";
+  if (homeType.includes("SINGLE_FAMILY")) s += 10;
 
   return Math.min(s, 99);
 }

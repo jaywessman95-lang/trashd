@@ -45,6 +45,7 @@ async function listFromSupabase(filters: SoldHomeFilters): Promise<SoldHomeLead[
 
   if (filters.city) q = q.ilike("city", `%${filters.city}%`);
   if (filters.minPrice) q = q.gte("sale_price", filters.minPrice);
+  if (filters.verifiedOnly) q = q.eq("agent_profile_status", "verified");
   if (filters.soldWithinHours) {
     const cutoff = new Date(Date.now() - filters.soldWithinHours * 3600000).toISOString();
     q = q.gte("sold_date", cutoff);
@@ -108,6 +109,7 @@ async function listFromSupabase(filters: SoldHomeFilters): Promise<SoldHomeLead[
       .limit(100);
 
     if (filters.city) cq = cq.ilike("name", `%${filters.city}%`);
+    if (filters.verifiedOnly) cq = cq.eq("profile_status", "verified");
 
     const { data: contactRows } = await cq;
     const existingIds = new Set(listings.map((l) => l.id));
@@ -136,6 +138,7 @@ async function listFromSupabase(filters: SoldHomeFilters): Promise<SoldHomeLead[
           agentPhone: c.phone ?? undefined,
           agentEmail: c.email ?? undefined,
           agentBrokerage: c.brokerage ?? undefined,
+          agentProfileStatus: c.profile_status ?? "unverified",
           scrapedAt: c.scraped_at,
           contactOnly: true,
         };

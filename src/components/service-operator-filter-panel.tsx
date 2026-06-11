@@ -1,3 +1,4 @@
+import { CollapsibleFilterShell } from "@/components/collapsible-filter-shell";
 import type { ServiceOperatorFilters, ServiceType, ContactFilter } from "@/lib/service-operators/types";
 
 const SERVICE_TYPES: ServiceType[] = ["junk_removal", "movers", "both"];
@@ -17,7 +18,7 @@ type Props = {
 
 export function ServiceOperatorFilterPanel({ filters, count }: Props) {
   return (
-    <section className="container lead-filter-panel" aria-label="Service operator filters">
+    <CollapsibleFilterShell summary={`${count} service${count !== 1 ? "s" : ""} shown`}>
       <form className="lead-filter-form" action="/services-for-realtors">
         <label>
           City
@@ -43,6 +44,13 @@ export function ServiceOperatorFilterPanel({ filters, count }: Props) {
           </select>
         </label>
         <label>
+          Verified only
+          <select defaultValue={filters.verifiedOnly ? "1" : ""} name="soVerified">
+            <option value="">All</option>
+            <option value="1">Verified only</option>
+          </select>
+        </label>
+        <label>
           Sort
           <select defaultValue={filters.sort ?? "score"} name="soSort">
             <option value="score">Best score</option>
@@ -59,10 +67,7 @@ export function ServiceOperatorFilterPanel({ filters, count }: Props) {
           </a>
         </div>
       </form>
-      <div className="filter-summary-row">
-        <p className="filter-summary">{count} service{count !== 1 ? "s" : ""} shown</p>
-      </div>
-    </section>
+    </CollapsibleFilterShell>
   );
 }
 
@@ -75,6 +80,7 @@ export function parseOperatorFilters(
     city: parseString(params.soCity),
     serviceType: parseEnum<ServiceType>(params.soServiceType, SERVICE_TYPES),
     contactFilter: parseEnum<ContactFilter>(params.soContactFilter, contactFilterValues) ?? "email_and_phone",
+    verifiedOnly: parseString(params.soVerified) === "1",
     sort: parseEnum(params.soSort, ["score", "newest", "name"] as const) ?? "score",
   };
 }

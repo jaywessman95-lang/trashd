@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { env } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { runOperatorScrapers } from "@/lib/service-operators/scrapers";
-import { sendOperatorOutreach } from "@/lib/integrations/gmail";
+import { scheduleEmailsInWindow } from "@/lib/email-queue-helpers";
 import crypto from "crypto";
 import { DEFAULT_OPERATOR_SCRAPE_SETTINGS } from "@/lib/service-operators/types";
 
@@ -33,11 +33,19 @@ export async function GET(request: Request) {
 
   const maxLeads = parseInt(
     url.searchParams.get("maxLeads") ?? String(DEFAULT_OPERATOR_SCRAPE_SETTINGS.maxLeadsPerHour),
-    10
+    10,
   );
   const maxEmails = parseInt(
     url.searchParams.get("maxEmails") ?? String(DEFAULT_OPERATOR_SCRAPE_SETTINGS.maxEmailsPerRun),
-    10
+    10,
+  );
+  const emailWindowStart = parseInt(
+    url.searchParams.get("emailWindowStart") ?? String(DEFAULT_OPERATOR_SCRAPE_SETTINGS.emailWindowStart),
+    10,
+  );
+  const emailWindowEnd = parseInt(
+    url.searchParams.get("emailWindowEnd") ?? String(DEFAULT_OPERATOR_SCRAPE_SETTINGS.emailWindowEnd),
+    10,
   );
 
   let upserted = 0;
@@ -70,25 +78,49 @@ export async function GET(request: Request) {
         profile_status: op.profileStatus ?? "unverified",
         scraped_at: op.scrapedAt ?? nowUTC.toISOString(),
         verification_token: crypto.randomUUID(),
+        // 3-pillar scoring data (populated when YellowPages profile has ratings)
+        google_maps_rating:    op.googleMapsRating    ?? null,
+        google_review_count:   op.googleReviewCount   ?? null,
+        hours_description:     op.hoursDescription    ?? null,
+        availability_score:    op.availabilityScore   ?? 0,
+        reliability_score:     op.reliabilityScore    ?? 0,
+        professionalism_score: op.professionalismScore ?? 0,
+        confidence_tier:       op.confidenceTier      ?? null,
+        last_scored_at:        op.confidenceTier ? nowUTC.toISOString() : null,
       }));
 
       for (let i = 0; i < rows.length; i += 200) {
         const batch = rows.slice(i, i + 200);
-        const { error } = await db
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (db as any)
           .from("service_operators")
           .upsert(batch, { onConflict: "id", ignoreDuplicates: true });
         if (error) throw error;
         upserted += batch.length;
       }
 
-      // Send outreach emails to newly inserted operators that have an email
-      if (maxEmails > 0 && env.GMAIL_CLIENT_ID && env.GMAIL_REFRESH_TOKEN) {
-        const thirtyDaysAgo = new Date(nowUTC.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
-        const { count: recentSalesCount } = await db
-          .from("realtor_sold_listings")
-          .select("id", { count: "exact", head: true })
-          .gte("sold_date", thirtyDaysAgo);
+      // For operators that came back with rating data, UPDATE the scoring columns
+      // on existing rows (ignoreDuplicates skips the full row, so we patch separately)
+      const withRatings = operators.filter(op => op.googleMapsRating !== undefined);
+      for (const op of withRatings) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (db as any).from("service_operators").update({
+          google_maps_rating:    op.googleMapsRating,
+          google_review_count:   op.googleReviewCount   ?? null,
+          hours_description:     op.hoursDescription    ?? null,
+          availability_score:    op.availabilityScore   ?? 0,
+          reliability_score:     op.reliabilityScore    ?? 0,
+          professionalism_score: op.professionalismScore ?? 0,
+          confidence_tier:       op.confidenceTier      ?? null,
+          score:                 op.score,
+          priority:              op.priority,
+          last_scored_at:        nowUTC.toISOString(),
+          updated_at:            nowUTC.toISOString(),
+        }).eq("id", op.id);
+      }
 
+      // Enqueue outreach emails with randomised send times spread across the PT window
+      if (maxEmails > 0 && env.GMAIL_CLIENT_ID && env.GMAIL_REFRESH_TOKEN) {
         const { data: toEmail } = await db
           .from("service_operators")
           .select("id, company, email, verification_token")
@@ -97,23 +129,31 @@ export async function GET(request: Request) {
           .order("scraped_at", { ascending: false })
           .limit(maxEmails);
 
-        for (const op of toEmail ?? []) {
-          if (!op.email) continue;
-          try {
-            await sendOperatorOutreach(
-              op.email,
-              op.company,
-              op.verification_token ?? undefined,
-              recentSalesCount ?? undefined
-            );
+        const operators = (toEmail ?? []).filter((op) => !!op.email);
+        const scheduledTimes = scheduleEmailsInWindow(operators.length, emailWindowStart, emailWindowEnd);
+
+        if (scheduledTimes.length > 0) {
+          const queueRows = operators.slice(0, scheduledTimes.length).map((op, i) => ({
+            type: "operator",
+            recipient_id: op.id,
+            recipient_email: op.email,
+            recipient_name: op.company ?? null,
+            verification_token: op.verification_token ?? null,
+            scheduled_at: scheduledTimes[i].toISOString(),
+            status: "pending",
+          }));
+
+          const { error: qErr } = await db.from("email_queue").insert(queueRows);
+          if (qErr) {
+            lastEmailError = qErr.message;
+          } else {
+            // Mark operators as queued so they won't be picked up again next run
+            const ids = operators.slice(0, scheduledTimes.length).map((op) => op.id);
             await db
               .from("service_operators")
               .update({ outreach_sent_at: nowUTC.toISOString() })
-              .eq("id", op.id);
-            emailsSent++;
-          } catch (emailErr) {
-            lastEmailError = emailErr instanceof Error ? emailErr.message
-              : ((emailErr as { message?: string })?.message ?? JSON.stringify(emailErr));
+              .in("id", ids);
+            emailsSent = queueRows.length;
           }
         }
       }
@@ -129,7 +169,7 @@ export async function GET(request: Request) {
     maxLeads,
     maxEmails,
     upserted,
-    emailsSent,
+    emailsQueued: emailsSent,
     bySource,
     error: runError,
     emailError: lastEmailError,

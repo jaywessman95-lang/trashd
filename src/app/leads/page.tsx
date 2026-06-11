@@ -3,6 +3,7 @@ import { AppShell } from "@/components/app-shell";
 import { LeadCard } from "@/components/lead-card";
 import { countActiveFilters, jobSizes, LeadFilterPanel, leadTypes, priorities } from "@/components/lead-filter-panel";
 import { LeadTable } from "@/components/lead-table";
+import { AdminOnboardingStats } from "@/components/admin-onboarding-stats";
 import { RealtorScrapeSettings } from "@/components/realtor-scrape-settings";
 import { RealtorSoldTable } from "@/components/realtor-sold-table";
 import { SettingsForm } from "@/components/settings-form";
@@ -10,7 +11,10 @@ import { parseSoldHomeFilters, SoldHomeFilterPanel } from "@/components/sold-hom
 import { SOURCES } from "@/lib/config/sources";
 import { listLeads } from "@/lib/leads/repository";
 import { listSoldHomes } from "@/lib/sold-homes/repository";
+import { getCurrentUser } from "@/lib/supabase/server";
 import type { JobSize, LeadPriority, LeadType, SourceId } from "@/lib/types";
+
+const ADMIN_EMAIL = "conexer@gmail.com";
 
 export const dynamic = "force-dynamic";
 
@@ -94,11 +98,13 @@ async function WebsiteTab({ resolved }: { resolved: Record<string, string | stri
 
 async function SoldHomesTab({ resolved }: { resolved: Record<string, string | string[] | undefined> }) {
   const filters = parseSoldHomeFilters(resolved);
-  const homes = await listSoldHomes(filters);
+  const [homes, user] = await Promise.all([listSoldHomes(filters), getCurrentUser()]);
+  const isAdmin = user?.email === ADMIN_EMAIL;
 
   return (
     <>
-      <RealtorScrapeSettings />
+      {isAdmin && <AdminOnboardingStats />}
+      {isAdmin && <RealtorScrapeSettings />}
       <SoldHomeFilterPanel filters={filters} homeCount={homes.length} />
       <RealtorSoldTable homes={homes} />
     </>

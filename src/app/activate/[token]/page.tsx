@@ -4,6 +4,19 @@ import { env } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
+// Fire-and-forget: kick off profile enrichment without blocking the page render
+function triggerEnrichment(operatorId: string) {
+  if (!env.CRON_SECRET || !env.NEXT_PUBLIC_SUPABASE_URL) return;
+  const baseUrl = env.NEXT_PUBLIC_SUPABASE_URL
+    ? process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "http://localhost:3000"
+    : "http://localhost:3000";
+  const enrichUrl = `${baseUrl}/api/internal/enrich-one?id=${operatorId}&secret=${env.CRON_SECRET}`;
+  // Do not await — runs in background while operator sees success screen
+  fetch(enrichUrl).catch(() => {});
+}
+
 type Props = { params: Promise<{ token: string }> };
 
 export default async function ActivatePage({ params }: Props) {
@@ -50,6 +63,8 @@ export default async function ActivatePage({ params }: Props) {
       .from("service_operators")
       .update({ profile_status: "verified" })
       .eq("id", operator.id);
+    // Kick off profile enrichment in the background immediately
+    triggerEnrichment(operator.id);
     return <ActivateResult status="success" name={operator.company} type="operator" profileUrl={editUrl} />;
   }
 

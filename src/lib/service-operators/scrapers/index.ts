@@ -1,6 +1,9 @@
 import { scrapeGoogleDorkEmails } from "./google-dork";
 import { scrapeYellowPagesProfiles } from "./yellowpages-profiles";
+import { scrapeGoogleMapsVendors } from "./google-maps";
 import type { ServiceOperator } from "../types";
+
+export { scrapeGoogleMapsVendors };
 
 export async function runOperatorScrapers(maxLeads = 100): Promise<{
   operators: ServiceOperator[];

@@ -4,17 +4,20 @@ export type ZyteFetchRequest = {
   url: string;
   render?: boolean;
   stealth?: boolean;
+  javascript?: string; // JS snippet executed after render; result returned in browserJsResult
 };
 
 export type ZyteFetchResult = {
   url: string;
   html: string;
+  jsResult?: string;
   statusCode?: number;
 };
 
 type ZyteExtractResponse = {
   browserHtml?: string;
   httpResponseBody?: string;
+  browserJsResult?: string;
   statusCode?: number;
   url?: string;
 };
@@ -51,7 +54,9 @@ export async function fetchWithZyte(request: ZyteFetchRequest): Promise<ZyteFetc
       customHttpRequestHeaders: STEALTH_HEADERS,
     };
   } else if (request.render ?? true) {
-    body = { url: request.url, browserHtml: true };
+    body = request.javascript
+      ? { url: request.url, browserHtml: true, javascript: request.javascript }
+      : { url: request.url, browserHtml: true };
   } else {
     body = { url: request.url, httpResponseBody: true };
   }
@@ -82,6 +87,7 @@ export async function fetchWithZyte(request: ZyteFetchRequest): Promise<ZyteFetc
   return {
     url: data.url ?? request.url,
     html,
+    jsResult: data.browserJsResult,
     statusCode: data.statusCode
   };
 }

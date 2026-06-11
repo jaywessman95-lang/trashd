@@ -1,5 +1,5 @@
 import { fetchWithZyte } from "@/lib/integrations/zyte";
-import { scoreOperator, isCustomDomain, detectServiceType } from "../types";
+import { scoreOperator, isCustomDomain, detectServiceType, isStorageCompany } from "../types";
 import type { ServiceOperator } from "../types";
 import crypto from "crypto";
 
@@ -111,6 +111,9 @@ export async function scrapeGoogleDorkEmails(
           .replace(/[._\-]/g, " ")
           .replace(/\b\w/g, l => l.toUpperCase())
           .trim() || undefined;
+
+        // Skip storage/self-storage facilities
+        if (isStorageCompany(company ?? "", email)) continue;
 
         const id = crypto.createHash("md5").update(`googledork::${email}`).digest("hex");
 

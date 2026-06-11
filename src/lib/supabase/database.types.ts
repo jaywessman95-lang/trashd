@@ -215,6 +215,29 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["realtor_sold_listings"]["Row"]>;
         Relationships: [];
       };
+      email_queue: {
+        Row: {
+          id: string;
+          type: string;
+          recipient_id: string;
+          recipient_email: string;
+          recipient_name: string | null;
+          verification_token: string | null;
+          scheduled_at: string;
+          status: string;
+          created_at: string;
+          sent_at: string | null;
+          error: string | null;
+        };
+        Insert: Partial<Database["public"]["Tables"]["email_queue"]["Row"]> & {
+          type: string;
+          recipient_id: string;
+          recipient_email: string;
+          scheduled_at: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["email_queue"]["Row"]>;
+        Relationships: [];
+      };
       service_operators: {
         Row: {
           id: string;
@@ -239,6 +262,47 @@ export type Database = {
           scraped_at: string;
           created_at: string;
           updated_at: string;
+          // 3-pillar scoring
+          availability_score: number | null;
+          reliability_score: number | null;
+          professionalism_score: number | null;
+          confidence_tier: string | null;
+          last_scored_at: string | null;
+          // Google Maps / scraped
+          google_place_id: string | null;
+          google_maps_rating: number | null;
+          google_review_count: number | null;
+          google_last_review_at: string | null;
+          google_response_rate: string | null;
+          google_response_time: string | null;
+          hours_description: string | null;
+          hours_json: Record<string, string> | null;
+          review_snippet: string | null;
+          maps_rank: number | null;
+          jobs_completed: number | null;
+          // Vendor-editable
+          tagline: string | null;
+          is_licensed: boolean | null;
+          is_insured: boolean | null;
+          years_in_business: number | null;
+          crew_size: number | null;
+          num_trucks: number | null;
+          services_offered: string[] | null;
+          service_areas: string[] | null;
+          service_area_zips: string[] | null;
+          max_job_size: string | null;
+          pricing_info: string | null;
+          pricing_tiers: Array<{ label: string; price: string; note?: string }> | null;
+          photo_urls: string[] | null;
+          certifications: string[] | null;
+          license_number: string | null;
+          license_state: string | null;
+          testimonials: Array<{ text: string; author?: string; jobType?: string; date?: string }> | null;
+          fleet_description: string | null;
+          has_referral_program: boolean | null;
+          referral_commission: number | null;
+          eco_friendly: boolean | null;
+          instagram_url: string | null;
         };
         Insert: Partial<Database["public"]["Tables"]["service_operators"]["Row"]> & {
           id: string;

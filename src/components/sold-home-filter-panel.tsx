@@ -1,3 +1,4 @@
+import { CollapsibleFilterShell } from "@/components/collapsible-filter-shell";
 import type { SoldHomeFilters, PropertyType, ContactFilter } from "@/lib/sold-homes/types";
 
 const CONTACT_FILTERS: { value: ContactFilter | ""; label: string }[] = [
@@ -17,7 +18,7 @@ type SoldHomeFilterPanelProps = {
 
 export function SoldHomeFilterPanel({ filters, homeCount }: SoldHomeFilterPanelProps) {
   return (
-    <section className="container lead-filter-panel" aria-label="Sold home filters">
+    <CollapsibleFilterShell summary={`${homeCount} sold homes shown`}>
       <form className="lead-filter-form" action="/leads">
         <input type="hidden" name="tab" value="realtors-just-sold" />
         <label>
@@ -65,6 +66,13 @@ export function SoldHomeFilterPanel({ filters, homeCount }: SoldHomeFilterPanelP
           </select>
         </label>
         <label>
+          Verified only
+          <select defaultValue={filters.verifiedOnly ? "1" : ""} name="shVerified">
+            <option value="">All</option>
+            <option value="1">Verified only</option>
+          </select>
+        </label>
+        <label>
           Sort
           <select defaultValue={filters.sort ?? "score"} name="shSort">
             <option value="score">Best score</option>
@@ -82,10 +90,7 @@ export function SoldHomeFilterPanel({ filters, homeCount }: SoldHomeFilterPanelP
           </a>
         </div>
       </form>
-      <div className="filter-summary-row">
-        <p className="filter-summary">{homeCount} sold homes shown</p>
-      </div>
-    </section>
+    </CollapsibleFilterShell>
   );
 }
 
@@ -98,6 +103,7 @@ export function parseSoldHomeFilters(params: Record<string, string | string[] | 
     soldWithinHours: parseOptionalNumber(params.shSoldWithin),
     propertyType: parseEnum<PropertyType>(params.shPropertyType, propertyTypes),
     contactFilter: parseEnum<ContactFilter>(params.shContactFilter, contactFilterValues) ?? "email_and_phone",
+    verifiedOnly: parseString(params.shVerified) === "1",
     sort: parseEnum(params.shSort, ["newest", "highest_price", "lowest_price", "score"] as const) ?? "score"
   };
 }

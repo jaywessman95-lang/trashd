@@ -72,15 +72,11 @@ export async function runContactScrapers(
   if (sources.includes("pacificsir"))
     runners.push(() => scrapePacificSothebys());
 
-  // Run sequentially to avoid hammering Zyte concurrency limits
-  const results: ContactScrapeResult[] = [];
-  for (const run of runners) {
-    try {
-      results.push(await run());
-    } catch (e) {
-      // Individual scraper failure doesn't abort the run
-    }
-  }
+  // Run in parallel — Zyte handles concurrency; sequential was too slow for 300s budget
+  const settled = await Promise.allSettled(runners.map((run) => run()));
+  const results: ContactScrapeResult[] = settled
+    .filter((r): r is PromiseFulfilledResult<ContactScrapeResult> => r.status === "fulfilled")
+    .map((r) => r.value);
 
   const allContacts = results.flatMap((r) => r.contacts);
   const bySource: ContactScraperRunSummary["bySource"] = {};

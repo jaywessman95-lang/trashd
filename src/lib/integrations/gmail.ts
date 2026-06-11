@@ -47,7 +47,6 @@ async function getOrCreateLabel(name: string, accessToken: string): Promise<stri
     const existing = (labels ?? []).find((l) => l.name === name);
     if (existing) return existing.id;
   }
-  // Create it
   const createRes = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/labels", {
     method: "POST",
     headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
@@ -73,9 +72,7 @@ async function getGmailAccessToken(): Promise<string> {
 
   const response = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded"
-    },
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       client_id: env.GMAIL_CLIENT_ID,
       client_secret: env.GMAIL_CLIENT_SECRET,
@@ -85,33 +82,40 @@ async function getGmailAccessToken(): Promise<string> {
   });
 
   const data = (await response.json()) as GoogleTokenResponse;
-
   if (!response.ok || !data.access_token) {
     throw new Error(data.error_description ?? data.error ?? "Unable to refresh Gmail access token.");
   }
-
   return data.access_token;
 }
 
-function mimeEncodeSubject(subject: string): string {
-  if (/^[\x00-\x7F]*$/.test(subject)) return subject;
-  return `=?UTF-8?B?${Buffer.from(subject, "utf-8").toString("base64")}?=`;
+// Converts any non-ASCII or problematic Unicode to plain ASCII equivalents.
+// Prevents garbled characters (Ã¢Â€Â etc.) when email clients misread UTF-8.
+function sanitizeText(text: string): string {
+  return text
+    .replace(/‘|’/g, "'")      // left/right single quotes -> '
+    .replace(/“|”/g, '"')      // left/right double quotes -> "
+    .replace(/–/g, "-")             // en dash -> -
+    .replace(/—/g, " - ")           // em dash -> ' - '
+    .replace(/…/g, "...")           // ellipsis -> ...
+    .replace(/ /g, " ")            // non-breaking space -> space
+    .replace(/[^\x00-\x7F]/g, "");      // strip any remaining non-ASCII
 }
 
 function buildRawMessage(email: LeadAlertEmail): string {
-  if (!env.GMAIL_FROM_EMAIL) {
-    throw new Error("Missing GMAIL_FROM_EMAIL.");
-  }
+  if (!env.GMAIL_FROM_EMAIL) throw new Error("Missing GMAIL_FROM_EMAIL.");
+
+  const subject = sanitizeText(email.subject);
+  const body    = sanitizeText(email.text);
 
   const message = [
     `From: ${env.GMAIL_FROM_EMAIL}`,
     `To: ${email.to}`,
-    `Subject: ${mimeEncodeSubject(email.subject)}`,
+    `Subject: ${subject}`,
     "MIME-Version: 1.0",
-    "Content-Type: text/plain; charset=utf-8",
-    "Content-Transfer-Encoding: base64",
+    "Content-Type: text/plain; charset=us-ascii",
+    "Content-Transfer-Encoding: 7bit",
     "",
-    Buffer.from(email.text, "utf-8").toString("base64")
+    body,
   ].join("\r\n");
 
   return Buffer.from(message).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
@@ -121,64 +125,66 @@ const APP_BASE_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL
   ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
   : "https://trashd.vercel.app";
 
+const REALTOR_SUBJECTS: Array<(first: string) => string> = [
+  (first) => `Quick question, ${first} - do your OC clients ever need a cleanout crew?`,
+  (first) => `${first}, same-day cleanout vendors ready for your listings in OC`,
+  (first) => `${first} - post-sale cleanouts for your clients, handled same day`,
+  (first) => `Your next OC listing may need a cleanout, ${first} - I can help`,
+];
+
+const OPERATOR_SUBJECTS: Array<(name: string) => string> = [
+  (name) => `${name} - OC realtors are asking for cleanout vendors right now`,
+  (name) => `New job for ${name} - post-sale cleanout referral in Orange County`,
+  (name) => `${name}, can you take a cleanout job from an OC realtor this week?`,
+  (name) => `OC realtor needs a reliable cleanout crew - is ${name} available?`,
+];
+
+function pickVariant<T>(arr: T[], seed: string): T {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) hash = ((hash * 31) + seed.charCodeAt(i)) >>> 0;
+  return arr[hash % arr.length];
+}
+
 export function buildRealtorOutreachEmail(
   agentName: string | null | undefined,
   activationToken?: string,
-  vendorCount?: number
 ): { subject: string; body: string } {
   const first = agentName?.trim().split(" ")[0] ?? "there";
-  const vendorLine = vendorCount && vendorCount > 0
-    ? `${vendorCount} vetted vendor${vendorCount === 1 ? "" : "s"}`
-    : "a network of vetted vendors";
-  const subject = vendorCount && vendorCount > 0
-    ? `${vendorCount} cleanout vendors ready for your clients in OC (same-day quotes)`
-    : `Your clients need a cleanout — ${vendorLine} in OC, ready to go`;
+  const subject = pickVariant(REALTOR_SUBJECTS, first)(first);
   const activationLine = activationToken
-    ? `\n\nWe've also created a free profile for you on Trashd so junk removal operators ` +
-      `can find and contact you directly. Click below to activate it (one click, no account needed):\n` +
+    ? `\n\nWe also created a free profile for you on Trashd so cleanout crews can find and contact you directly. Activate it in one click - no account needed:\n` +
       `${APP_BASE_URL}/activate/${activationToken}\n`
     : "";
   const body =
     `Hi ${first},\n\n` +
-    `I run Trashd — a platform connecting Orange County realtors with reliable junk removal ` +
-    `and cleanout vendors. Right now we have **${vendorLine}** in OC who can quote your ` +
-    `clients same-day, so you always have someone to call.\n\n` +
-    `Whether it's a post-sale cleanout, estate clear-out, or pre-listing staging clean-up — ` +
-    `your clients get fast, affordable service and you get a referral you can actually stand behind.\n\n` +
-    `No account needed. Just forward a client's info and we handle the rest.` +
+    `Do your OC clients ever need help clearing out a home before or after a sale?\n\n` +
+    `I run Trashd - we match Orange County real estate agents with same-day junk removal and cleanout crews, so you always have a reliable referral in your back pocket.\n\n` +
+    `Whether it's a post-sale cleanout, an estate clear-out, or pre-listing staging - your clients get fast, affordable service and you get a referral you can genuinely stand behind.\n\n` +
+    `No signup needed. When a client needs it, just send their info and we handle the rest.` +
     activationLine + `\n` +
-    `Feel free to reply anytime — happy to answer questions.\n\n` +
-    `Best,\nTrashd Crew\n${env.GMAIL_FROM_EMAIL ?? "trashd.info@gmail.com"}`;
+    `Happy to answer any questions - just reply here.\n\n` +
+    `- Minh\nWebsite: http://trashd.vercel.app/\n${env.GMAIL_FROM_EMAIL ?? "trashd.info@gmail.com"}`;
   return { subject, body };
 }
 
 export function buildOperatorOutreachEmail(
   companyName: string | null | undefined,
   activationToken?: string,
-  recentSalesCount?: number
 ): { subject: string; body: string } {
   const name = companyName?.trim() ?? "there";
-  const salesLine = recentSalesCount && recentSalesCount > 0
-    ? `${recentSalesCount} homes`
-    : "dozens of homes";
-  const subject = recentSalesCount && recentSalesCount > 0
-    ? `${recentSalesCount} OC homes sold this month — owners need cleanouts, no vendor to call`
-    : `OC realtors need cleanout vendors — is your business listed on Trashd?`;
+  const subject = pickVariant(OPERATOR_SUBJECTS, name)(name);
   const activationLine = activationToken
-    ? `\nClaim your free listing now (one click, no account needed):\n` +
+    ? `\n\nClaim your free listing now - one click, no account needed:\n` +
       `${APP_BASE_URL}/activate/${activationToken}\n`
     : "";
   const body =
     `Hi ${name},\n\n` +
-    `We're sitting on **${salesLine} sold in Orange County this month** — and when realtors ` +
-    `ask us for a cleanout referral, we don't have enough vendors to send them to.\n\n` +
-    `Trashd connects real estate agents with reliable junk removal and cleanout businesses ` +
-    `like yours. Realtors use it to refer clients who need a post-sale or pre-listing cleanout, ` +
-    `and right now there's more demand than supply.\n\n` +
-    `A free listing puts your business in front of every OC realtor who uses our platform.` +
+    `Quick one - are you taking cleanout jobs in Orange County right now?\n\n` +
+    `I run Trashd. OC real estate agents contact us regularly looking for reliable junk removal crews to send clients to after a home sale. Right now we have more realtor referrals than vendors to fill them.\n\n` +
+    `A free listing puts your business in front of every OC agent on our platform. When they have a client who needs a post-sale or pre-listing cleanout, you're the first call they make.` +
     activationLine + `\n` +
-    `Feel free to reply with any questions.\n\n` +
-    `Best,\nTrashd Team\n${env.GMAIL_FROM_EMAIL ?? "trashd.info@gmail.com"}`;
+    `If you're interested or have questions, just reply here.\n\n` +
+    `- Minh\nWebsite: http://trashd.vercel.app/\n${env.GMAIL_FROM_EMAIL ?? "trashd.info@gmail.com"}`;
   return { subject, body };
 }
 
@@ -186,9 +192,8 @@ export async function sendRealtorOutreach(
   to: string,
   agentName: string | null | undefined,
   activationToken?: string,
-  vendorCount?: number
 ): Promise<void> {
-  const { subject, body } = buildRealtorOutreachEmail(agentName, activationToken, vendorCount);
+  const { subject, body } = buildRealtorOutreachEmail(agentName, activationToken);
   const accessToken = await getGmailAccessToken();
   const messageId = await sendRaw({ to, subject, text: body }, accessToken);
   const labelId = await getOrCreateLabel("Outreach Realtor", accessToken);
@@ -199,11 +204,10 @@ export async function sendOperatorOutreach(
   to: string,
   companyName: string | null | undefined,
   activationToken?: string,
-  recentSalesCount?: number
 ): Promise<void> {
-  const { subject, body } = buildOperatorOutreachEmail(companyName, activationToken, recentSalesCount);
+  const { subject, body } = buildOperatorOutreachEmail(companyName, activationToken);
   const accessToken = await getGmailAccessToken();
   const messageId = await sendRaw({ to, subject, text: body }, accessToken);
-  const labelId = await getOrCreateLabel("Outreach Junk", accessToken);
+  const labelId = await getOrCreateLabel("Outreach Junk/Movers", accessToken);
   await applyLabel(messageId, labelId, accessToken);
 }

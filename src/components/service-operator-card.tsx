@@ -82,7 +82,9 @@ export function ServiceOperatorCard({ operator: op }: Props) {
         </div>
 
         <div className="realtor-card-identity">
-          <div className="realtor-card-name">{op.company ?? "Unknown Company"}</div>
+          <a className="realtor-card-name operator-profile-link" href={`/operators/${op.id}`}>
+            {op.company ?? "Unknown Company"}
+          </a>
           {op.city && (
             <div className="realtor-card-brokerage">{op.city}{op.state ? `, ${op.state}` : ""}</div>
           )}

@@ -153,7 +153,9 @@ export function ServiceOperatorTable({ operators }: Props) {
                       </span>
                     </td>
                     <td>
-                      <div className="lead-table-title">{op.company ?? "—"}</div>
+                      <a className="lead-table-title-link operator-profile-link" href={`/operators/${op.id}`}>
+                        <div className="lead-table-title">{op.company ?? "—"}</div>
+                      </a>
                       {isValidWebsite(op.websiteUrl) && (
                         <div className="lead-table-source">
                           <a href={op.websiteUrl} target="_blank" rel="noreferrer" className="phone-link">

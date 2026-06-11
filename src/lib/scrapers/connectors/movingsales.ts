@@ -23,6 +23,16 @@ export const movingSalesConnector: SourceConnector = {
         return;
       }
 
+      // Exclude nav/utility pages: require URL path depth >= 3 segments and meaningful title
+      try {
+        const path = new URL(listingUrl).pathname.replace(/\/$/, "");
+        const depth = path.split("/").filter(Boolean).length;
+        if (depth < 2) return;
+      } catch {
+        return;
+      }
+      if (title.length < 15) return;
+
       seen.add(listingUrl);
       candidates.push({
         source: "movingsales",
