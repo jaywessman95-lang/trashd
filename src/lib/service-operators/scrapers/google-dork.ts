@@ -66,13 +66,18 @@ function buildUrl(query: string, page = 1): string {
 
 export async function scrapeGoogleDorkEmails(
   maxLeads = 100,
-  scope: "oc_la" | "national" | "both" = "oc_la"
+  scope: "oc_la" | "national" | "both" = "oc_la",
+  targetCities?: string[]
 ): Promise<ServiceOperator[]> {
-  const cities = scope === "national"
+  const allCities = scope === "national"
     ? NATIONAL_CITIES
     : scope === "both"
     ? [...OC_LA_CITIES, ...NATIONAL_CITIES]
     : OC_LA_CITIES;
+
+  const cities = targetCities?.length
+    ? targetCities.filter((c) => allCities.some((ac) => ac.toLowerCase() === c.toLowerCase()))
+    : allCities;
 
   const results: ServiceOperator[] = [];
   const seenEmails = new Set<string>();

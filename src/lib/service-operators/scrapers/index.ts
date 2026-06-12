@@ -5,7 +5,10 @@ import type { ServiceOperator } from "../types";
 
 export { scrapeGoogleMapsVendors };
 
-export async function runOperatorScrapers(maxLeads = 100): Promise<{
+export async function runOperatorScrapers(
+  maxLeads = 100,
+  targetCities?: string[]
+): Promise<{
   operators: ServiceOperator[];
   bySource: Record<string, number>;
 }> {
@@ -22,8 +25,8 @@ export async function runOperatorScrapers(maxLeads = 100): Promise<{
   }
 
   const [dork, ypProfiles] = await Promise.all([
-    scrapeGoogleDorkEmails(Math.ceil(maxLeads * 0.6)),
-    scrapeYellowPagesProfiles(Math.ceil(maxLeads * 0.4)),
+    scrapeGoogleDorkEmails(Math.ceil(maxLeads * 0.6), "oc_la", targetCities),
+    scrapeYellowPagesProfiles(Math.ceil(maxLeads * 0.4), undefined, targetCities),
   ]);
 
   addUnique(dork);

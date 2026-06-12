@@ -47,6 +47,8 @@ export async function GET(request: Request) {
     url.searchParams.get("emailWindowEnd") ?? String(DEFAULT_OPERATOR_SCRAPE_SETTINGS.emailWindowEnd),
     10,
   );
+  const citiesParam = url.searchParams.get("cities");
+  const targetCities = citiesParam ? citiesParam.split(",").map((c) => c.trim()).filter(Boolean) : undefined;
 
   let upserted = 0;
   let emailsSent = 0;
@@ -55,7 +57,7 @@ export async function GET(request: Request) {
   let bySource: Record<string, number> = {};
 
   try {
-    const { operators, bySource: src } = await runOperatorScrapers(maxLeads);
+    const { operators, bySource: src } = await runOperatorScrapers(maxLeads, targetCities);
     bySource = src;
 
     if (operators.length > 0 && env.NEXT_PUBLIC_SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {

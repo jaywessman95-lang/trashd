@@ -223,11 +223,16 @@ async function scrapeProfile(
 
 export async function scrapeYellowPagesProfiles(
   maxProfiles = 60,
-  maxCities = OC_LA_SLUGS.length
+  maxCities = OC_LA_SLUGS.length,
+  targetCities?: string[]
 ): Promise<ServiceOperator[]> {
   const results: ServiceOperator[] = [];
   const seenIds = new Set<string>();
-  const citiesToScrape = OC_LA_SLUGS.slice(0, maxCities);
+  const citiesToScrape = targetCities?.length
+    ? targetCities.flatMap((c) =>
+        OC_LA_SLUGS.filter((s) => s.city.toLowerCase() === c.toLowerCase())
+      )
+    : OC_LA_SLUGS.slice(0, maxCities);
 
   for (const { city, slug } of citiesToScrape) {
     if (results.length >= maxProfiles) break;
