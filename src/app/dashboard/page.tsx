@@ -1,3 +1,4 @@
+import { AdminEmailQueue } from "@/components/admin-email-queue";
 import { AdminOnboardingStats } from "@/components/admin-onboarding-stats";
 import { AppShell } from "@/components/app-shell";
 import { DashboardStat } from "@/components/dashboard-stat";
@@ -25,6 +26,7 @@ export default async function DashboardPage() {
       </section>
 
       {isAdmin && <AdminOnboardingStats />}
+      {isAdmin && <AdminEmailQueue />}
 
       <section className="container grid" aria-label="Lead list">
         {leads.map((lead) => (

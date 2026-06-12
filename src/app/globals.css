@@ -188,3 +188,43 @@
 
 .admin-chart-card{display:grid;gap:14px}
 .admin-chart-placeholder{height:260px;background:var(--panel-soft);border-radius:var(--radius)}
+
+/* ─── ADMIN EMAIL QUEUE PANEL ─── */
+.admin-email-queue-section{padding-top:28px;padding-bottom:40px;display:grid;gap:16px}
+.admin-email-queue-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.admin-email-queue-header h2{margin:0;font-size:22px;font-weight:850}
+.admin-eq-count{color:var(--muted);font-size:14px;font-weight:700;margin-left:8px}
+.admin-eq-refresh-btn{border:1px solid var(--border);border-radius:var(--radius);background:var(--panel);color:var(--muted);cursor:pointer;padding:6px 14px;font-size:13px;font-weight:800;transition:border-color .15s,color .15s}
+.admin-eq-refresh-btn:hover{border-color:var(--primary);color:var(--primary)}
+.admin-eq-controls{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--panel-soft)}
+.admin-eq-select-n{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.admin-eq-select-n label{color:#334155;font-size:13px;font-weight:800}
+.admin-eq-n-input{border:1px solid #b8c4d2;border-radius:var(--radius);background:#fff;color:var(--foreground);width:70px;min-height:36px;padding:0 10px;font-size:14px;text-align:center;transition:border-color .18s}
+.admin-eq-n-input:focus{border-color:var(--primary);outline:none;box-shadow:0 0 0 3px #0f766e24}
+.admin-eq-n-input::-webkit-inner-spin-button,.admin-eq-n-input::-webkit-outer-spin-button{-webkit-appearance:none;appearance:none;margin:0}
+.admin-eq-n-input[type=number]{-moz-appearance:textfield;appearance:textfield}
+.admin-eq-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.admin-eq-send-btn{border:1px solid var(--primary);border-radius:var(--radius);background:var(--primary);color:#fff;cursor:pointer;min-height:38px;padding:0 20px;font-size:14px;font-weight:800;transition:background .18s,border-color .18s}
+.admin-eq-send-btn:hover:not(:disabled){background:var(--primary-hover);border-color:var(--primary-hover)}
+.admin-eq-send-btn:disabled{opacity:.5;cursor:not-allowed}
+.admin-eq-progress{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.admin-eq-progress-label{color:var(--foreground);font-size:13px;font-weight:800}
+.admin-eq-countdown{color:var(--primary-hover);background:var(--primary-soft);border-radius:999px;padding:4px 12px;font-size:12px;font-weight:800}
+.admin-eq-stop-btn{border:1px solid #fca5a5;border-radius:var(--radius);background:#fff1f2;color:#b91c1c;cursor:pointer;min-height:32px;padding:0 12px;font-size:13px;font-weight:800;transition:background .15s}
+.admin-eq-stop-btn:hover{background:#fee2e2}
+.admin-eq-done-msg{color:var(--primary-hover);font-size:13px;font-weight:800}
+.admin-eq-table-wrap{border:1px solid var(--border);border-radius:var(--radius);background:var(--panel);overflow:auto;max-height:460px;box-shadow:var(--shadow-sm)}
+.admin-eq-table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}
+.admin-eq-table thead{position:sticky;top:0;z-index:2}
+.admin-eq-table th{background:var(--panel-soft);border-bottom:2px solid var(--border);color:#334155;text-align:left;text-transform:uppercase;letter-spacing:.06em;padding:10px 12px;font-size:11px;font-weight:850}
+.admin-eq-table th:first-child,.admin-eq-table td:first-child{width:36px;padding-left:12px;padding-right:4px}
+.admin-eq-table td{border-bottom:1px solid var(--border);padding:10px 12px;vertical-align:middle}
+.admin-eq-table tbody tr:last-child td{border-bottom:0}
+.admin-eq-table tbody tr:hover td{background:var(--panel-soft)}
+.admin-eq-row-selected td{background:#f0fdf4!important}
+.admin-eq-empty{text-align:center;color:var(--muted);padding:32px;font-size:14px}
+.admin-eq-type-badge{display:inline-flex;align-items:center;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:850;text-transform:uppercase;letter-spacing:.04em}
+.admin-eq-type-realtor{color:#1e40af;background:#dbeafe;border:1px solid #93c5fd}
+.admin-eq-type-operator{color:#92400e;background:#fef3c7;border:1px solid #fcd34d}
+.admin-eq-email-cell{color:var(--muted);font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis}
+.admin-eq-date-cell{color:var(--muted);font-size:12px}
