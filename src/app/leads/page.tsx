@@ -3,7 +3,6 @@ import { AppShell } from "@/components/app-shell";
 import { LeadCard } from "@/components/lead-card";
 import { countActiveFilters, jobSizes, LeadFilterPanel, leadTypes, priorities } from "@/components/lead-filter-panel";
 import { LeadTable } from "@/components/lead-table";
-import { AdminOnboardingStats } from "@/components/admin-onboarding-stats";
 import { RealtorScrapeSettings } from "@/components/realtor-scrape-settings";
 import { RealtorSoldTable } from "@/components/realtor-sold-table";
 import { SettingsForm } from "@/components/settings-form";
@@ -103,7 +102,6 @@ async function SoldHomesTab({ resolved }: { resolved: Record<string, string | st
 
   return (
     <>
-      {isAdmin && <AdminOnboardingStats />}
       {isAdmin && <RealtorScrapeSettings />}
       <SoldHomeFilterPanel filters={filters} homeCount={homes.length} />
       <RealtorSoldTable homes={homes} />

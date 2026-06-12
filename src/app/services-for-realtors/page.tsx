@@ -1,4 +1,3 @@
-import { AdminOnboardingStats } from "@/components/admin-onboarding-stats";
 import { AppShell } from "@/components/app-shell";
 import { ServiceOperatorFilterPanel, parseOperatorFilters } from "@/components/service-operator-filter-panel";
 import { ServiceOperatorScrapeSettings } from "@/components/service-operator-scrape-settings";
@@ -30,7 +29,6 @@ export default async function ServicesForRealtorsPage({ searchParams }: PageProp
         </p>
       </section>
 
-      {isAdmin && <AdminOnboardingStats />}
       {isAdmin && <ServiceOperatorScrapeSettings />}
       <ServiceOperatorFilterPanel filters={filters} count={operators.length} />
       <ServiceOperatorTable operators={operators} />

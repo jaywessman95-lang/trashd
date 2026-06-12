@@ -1,12 +1,17 @@
+import { AdminOnboardingStats } from "@/components/admin-onboarding-stats";
 import { AppShell } from "@/components/app-shell";
 import { DashboardStat } from "@/components/dashboard-stat";
 import { LeadCard } from "@/components/lead-card";
 import { getLeadStats, listLeads } from "@/lib/leads/repository";
+import { getCurrentUser } from "@/lib/supabase/server";
+
+const ADMIN_EMAIL = "conexer@gmail.com";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const [stats, leads] = await Promise.all([getLeadStats(), listLeads({ limit: 6 })]);
+  const [stats, leads, user] = await Promise.all([getLeadStats(), listLeads({ limit: 6 }), getCurrentUser()]);
+  const isAdmin = user?.email === ADMIN_EMAIL;
 
   return (
     <AppShell>
@@ -18,6 +23,8 @@ export default async function DashboardPage() {
           <DashboardStat label="Large jobs" value={String(stats.largeJobs)} />
         </div>
       </section>
+
+      {isAdmin && <AdminOnboardingStats />}
 
       <section className="container grid" aria-label="Lead list">
         {leads.map((lead) => (
