@@ -64,6 +64,16 @@ function buildUrl(query: string, page = 1): string {
   return `https://www.google.com/search?q=${encoded}&num=20${start > 0 ? `&start=${start}` : ""}`;
 }
 
+function parseCityState(cityStr: string): { city: string; state: string } {
+  if (cityStr.includes(",")) {
+    const parts = cityStr.split(",");
+    return { city: parts[0].trim(), state: parts[1].trim() };
+  }
+  const m = cityStr.match(/^(.+?)\s+([A-Z]{2})$/);
+  if (m) return { city: m[1], state: m[2] };
+  return { city: cityStr, state: "CA" };
+}
+
 export async function scrapeGoogleDorkEmails(
   maxLeads = 100,
   scope: "oc_la" | "national" | "both" = "oc_la",
@@ -127,8 +137,7 @@ export async function scrapeGoogleDorkEmails(
           company,
           email,
           phone,
-          city: city.split(" ")[0],
-          state: city.includes(",") ? city.split(",")[1]?.trim() : city.split(" ").slice(-1)[0] ?? "CA",
+          ...parseCityState(city),
           serviceType,
           source: "google_dork",
           score,
