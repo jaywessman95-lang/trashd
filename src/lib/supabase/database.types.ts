@@ -168,6 +168,8 @@ export type Database = {
           profile_status: string;
           onboarding_email_sent_at: string | null;
           verification_token: string | null;
+          verified_at: string | null;
+          opted_out_at: string | null;
         };
         Insert: Partial<Database["public"]["Tables"]["realtor_contacts"]["Row"]> & {
           id: string;
@@ -303,6 +305,8 @@ export type Database = {
           referral_commission: number | null;
           eco_friendly: boolean | null;
           instagram_url: string | null;
+          verified_at: string | null;
+          opted_out_at: string | null;
         };
         Insert: Partial<Database["public"]["Tables"]["service_operators"]["Row"]> & {
           id: string;
