@@ -76,6 +76,21 @@ export async function AdminOnboardingStats() {
       </div>
 
       <div className="card admin-queue-card">
+        <div className="admin-pipeline-title">Verified Accounts</div>
+        <div className="admin-queue-row">
+          <div className="admin-queue-item">
+            <span className="admin-queue-value admin-verified-realtor-val">{fmt(realtors.verified)}</span>
+            <span className="admin-queue-label">Realtors verified</span>
+          </div>
+          <div className="admin-queue-divider" />
+          <div className="admin-queue-item">
+            <span className="admin-queue-value admin-verified-operator-val">{fmt(operators.verified)}</span>
+            <span className="admin-queue-label">Junk / Movers verified</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="card admin-queue-card">
         <div className="admin-pipeline-title">Email Queue</div>
         <div className="admin-queue-row">
           <div className="admin-queue-item">

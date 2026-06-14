@@ -39,6 +39,16 @@ export async function GET(request: Request) {
 
   for (const item of due ?? []) {
     try {
+      // Skip if recipient has opted out since this item was queued
+      const recipientQuery = item.type === "realtor"
+        ? db.from("realtor_contacts").select("profile_status").eq("id", item.recipient_id).single()
+        : db.from("service_operators").select("profile_status").eq("id", item.recipient_id).single();
+      const { data: recipient } = await recipientQuery;
+      if (recipient?.profile_status === "opted_out") {
+        await db.from("email_queue").update({ status: "cancelled" }).eq("id", item.id);
+        continue;
+      }
+
       if (item.type === "realtor") {
         await sendRealtorOutreach(item.recipient_email, item.recipient_name, item.verification_token ?? undefined);
       } else {

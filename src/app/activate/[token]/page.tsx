@@ -42,7 +42,7 @@ export default async function ActivatePage({ params }: Props) {
     }
     await db
       .from("realtor_contacts")
-      .update({ profile_status: "verified" })
+      .update({ profile_status: "verified", verified_at: new Date().toISOString() })
       .eq("id", contact.id);
     return <ActivateResult status="success" name={contact.name} type="realtor" profileUrl={editUrl} />;
   }
@@ -61,7 +61,7 @@ export default async function ActivatePage({ params }: Props) {
     }
     await db
       .from("service_operators")
-      .update({ profile_status: "verified" })
+      .update({ profile_status: "verified", verified_at: new Date().toISOString() })
       .eq("id", operator.id);
     // Kick off profile enrichment in the background immediately
     triggerEnrichment(operator.id);

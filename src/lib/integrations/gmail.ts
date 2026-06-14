@@ -155,6 +155,9 @@ export function buildRealtorOutreachEmail(
     ? `\n\nWe also created a free profile for you on Trashd so cleanout crews can find and contact you directly. Activate it in one click - no account needed:\n` +
       `${APP_BASE_URL}/activate/${activationToken}\n`
     : "";
+  const unsubLine = activationToken
+    ? `\n\n---\nTo stop receiving emails from Trashd: ${APP_BASE_URL}/unsubscribe/${activationToken}`
+    : "";
   const body =
     `Hi ${first},\n\n` +
     `Do your OC clients ever need help clearing out a home before or after a sale?\n\n` +
@@ -163,7 +166,8 @@ export function buildRealtorOutreachEmail(
     `No signup needed. When a client needs it, just send their info and we handle the rest.` +
     activationLine + `\n` +
     `Happy to answer any questions - just reply here.\n\n` +
-    `- Minh\nWebsite: http://trashd.vercel.app/\n${env.GMAIL_FROM_EMAIL ?? "trashd.info@gmail.com"}`;
+    `- Minh\nWebsite: http://trashd.vercel.app/\n${env.GMAIL_FROM_EMAIL ?? "trashd.info@gmail.com"}` +
+    unsubLine;
   return { subject, body };
 }
 
@@ -177,6 +181,9 @@ export function buildOperatorOutreachEmail(
     ? `\n\nClaim your free listing now - one click, no account needed:\n` +
       `${APP_BASE_URL}/activate/${activationToken}\n`
     : "";
+  const unsubLine = activationToken
+    ? `\n\n---\nTo stop receiving emails from Trashd: ${APP_BASE_URL}/unsubscribe/${activationToken}`
+    : "";
   const body =
     `Hi ${name},\n\n` +
     `Quick one - are you taking cleanout jobs in Orange County right now?\n\n` +
@@ -184,7 +191,8 @@ export function buildOperatorOutreachEmail(
     `A free listing puts your business in front of every OC agent on our platform. When they have a client who needs a post-sale or pre-listing cleanout, you're the first call they make.` +
     activationLine + `\n` +
     `If you're interested or have questions, just reply here.\n\n` +
-    `- Minh\nWebsite: http://trashd.vercel.app/\n${env.GMAIL_FROM_EMAIL ?? "trashd.info@gmail.com"}`;
+    `- Minh\nWebsite: http://trashd.vercel.app/\n${env.GMAIL_FROM_EMAIL ?? "trashd.info@gmail.com"}` +
+    unsubLine;
   return { subject, body };
 }
 

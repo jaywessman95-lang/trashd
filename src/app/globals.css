@@ -185,6 +185,8 @@
 .admin-queue-pending-val{color:#d97706}
 .admin-queue-sent-val{color:var(--primary-hover)}
 .admin-queue-failed-val{color:#dc2626}
+.admin-verified-realtor-val{color:#0f766e}
+.admin-verified-operator-val{color:#2563eb}
 
 .admin-chart-card{display:grid;gap:14px}
 .admin-chart-placeholder{height:260px;background:var(--panel-soft);border-radius:var(--radius)}

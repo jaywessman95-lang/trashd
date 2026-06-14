@@ -21,9 +21,11 @@ function fmtTick(d: string) {
 }
 
 const SERIES: { key: keyof ChartEntry; label: string; color: string; grad: string }[] = [
-  { key: "realtors",  label: "Realtors added",   color: "#0f766e", grad: "gradR" },
-  { key: "operators", label: "Operators added",   color: "#2563eb", grad: "gradO" },
-  { key: "sent",      label: "Emails sent",       color: "#f59e0b", grad: "gradS" },
+  { key: "realtors",          label: "Realtors added",        color: "#0f766e", grad: "gradR"  },
+  { key: "operators",         label: "Operators added",        color: "#2563eb", grad: "gradO"  },
+  { key: "sent",              label: "Emails sent",            color: "#f59e0b", grad: "gradS"  },
+  { key: "verifiedRealtors",  label: "Realtors verified",      color: "#10b981", grad: "gradVR" },
+  { key: "verifiedOperators", label: "Junk/Movers verified",   color: "#8b5cf6", grad: "gradVO" },
 ];
 
 export function AdminStatsChart({ data }: { data: ChartEntry[] }) {
