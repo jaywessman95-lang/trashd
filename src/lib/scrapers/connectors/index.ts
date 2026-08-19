@@ -8,7 +8,7 @@ import { storageTreasuresConnector } from "@/lib/scrapers/connectors/storagetrea
 import type { SourceConnector } from "@/lib/scrapers/connectors/types";
 import type { SourceId } from "@/lib/types";
 
-export const connectors: Record<SourceId, SourceConnector> = {
+export const connectors: Record<Exclude<SourceId, "website_quote">, SourceConnector> = {
   craigslist: craigslistConnector,
   offerup: offerupConnector,
   estatesales_net: estateSalesNetConnector,

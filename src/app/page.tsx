@@ -207,6 +207,24 @@ export default async function HomePage() {
         </div>
       </div>
 
+      {/* ── Quote tool promo ── */}
+      <section className="home-quote-promo">
+        <div className="container home-quote-promo-inner">
+          <div>
+            <div className="home-section-label">New: instant quote tool</div>
+            <h2 className="home-h2" style={{ marginBottom: 12 }}>Give Homeowners an Instant Price - Get Fresh Leads Automatically</h2>
+            <p className="home-quote-promo-sub">
+              Share your free Trashd quote page with customers. They answer a few quick questions,
+              upload photos, and get an instant price range - and the request lands straight in your
+              dashboard with contact info, ready to call.
+            </p>
+          </div>
+          <Link className="button home-quote-promo-cta" href="/get-quote">
+            Try the Quote Tool →
+          </Link>
+        </div>
+      </section>
+
       <section className="home-live-leads">
         <div className="container">
           <div className="home-section-label">Live operator view</div>

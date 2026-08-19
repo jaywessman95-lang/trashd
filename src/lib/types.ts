@@ -5,7 +5,8 @@ export type SourceId =
   | "storagetreasures"
   | "auctionzip"
   | "estatesales_org"
-  | "movingsales";
+  | "movingsales"
+  | "website_quote";
 
 export type LeadPriority = "hot_now" | "strong" | "good" | "hidden";
 

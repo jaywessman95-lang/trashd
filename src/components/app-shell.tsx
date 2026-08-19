@@ -14,6 +14,7 @@ type NavItem = {
 const defaultNavItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/leads", label: "Leads for Movers/Junk" },
+  { href: "/get-quote", label: "Get a Quote" },
   { href: "/services-for-realtors", label: "Services for Realtors" },
   { href: "/account", label: "Account" },
 ];

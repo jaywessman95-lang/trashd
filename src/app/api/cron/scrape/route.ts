@@ -12,7 +12,10 @@ type UserSettingsRow = Database["public"]["Tables"]["user_settings"]["Row"];
 const DAILY_RUN_COUNT = 15;
 
 const fallbackScrapeConfig = {
-  sources: ["craigslist", "offerup", "estatesales_net", "storagetreasures", "auctionzip", "estatesales_org", "movingsales"] as SourceId[],
+  sources: ["craigslist", "offerup", "estatesales_net", "storagetreasures", "auctionzip", "estatesales_org", "movingsales"] as Exclude<
+    SourceId,
+    "website_quote"
+  >[],
   cities: ["Anaheim", "Irvine", "Santa Ana", "Costa Mesa", "Orange"],
   radiusMiles: 25,
   maxSeedUrls: 3,
@@ -107,7 +110,7 @@ async function getScheduledScrapeConfig() {
 
   if (!activeSettings.length) {
     return {
-      sources: [] as SourceId[],
+      sources: [] as Exclude<SourceId, "website_quote">[],
       cities: [],
       radiusMiles: fallbackScrapeConfig.radiusMiles,
       maxSeedUrls: fallbackScrapeConfig.maxSeedUrls,
@@ -118,7 +121,9 @@ async function getScheduledScrapeConfig() {
   const coverage = getMostAggressiveCoverage(activeSettings.map((item) => item.scrape_coverage));
   const preset = SCRAPE_COVERAGE_PRESETS.find((item) => item.id === coverage) ?? SCRAPE_COVERAGE_PRESETS[1];
   const cities = unique(activeSettings.flatMap((item) => item.cities)).slice(0, 25);
-  const sources = unique(activeSettings.flatMap((item) => item.enabled_sources)) as SourceId[];
+  const sources = unique(activeSettings.flatMap((item) => item.enabled_sources)).filter(
+    (source): source is Exclude<SourceId, "website_quote"> => source !== "website_quote"
+  );
   const maxListingsOverride = maxOptional(activeSettings.map((item) => item.max_listings_per_source));
   const maxPagesOverride = maxOptional(activeSettings.map((item) => item.max_pages_per_source));
 

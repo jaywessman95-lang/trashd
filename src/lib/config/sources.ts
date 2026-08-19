@@ -10,6 +10,13 @@ export type SourceConfig = {
 
 export const SOURCES: SourceConfig[] = [
   {
+    id: "website_quote",
+    label: "Website Quote Requests",
+    rank: 0,
+    confidenceBoost: 40,
+    defaultSchedule: "instant"
+  },
+  {
     id: "craigslist",
     label: "Craigslist",
     rank: 1,

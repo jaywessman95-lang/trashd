@@ -7,7 +7,7 @@ import { failScrapeRun, finishScrapeRun, persistScoredLead, startScrapeRun } fro
 import type { LeadScore, NormalizedLeadCandidate, SourceId } from "@/lib/types";
 
 export type ScrapeRunInput = {
-  source: SourceId;
+  source: Exclude<SourceId, "website_quote">;
   cities: string[];
   radiusMiles: number;
   maxSeedUrls?: number;

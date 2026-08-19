@@ -24,6 +24,10 @@ export type Database = {
           lead_type: string;
           ai_reason: string | null;
           scoring_version: string | null;
+          contact_name: string | null;
+          contact_phone: string | null;
+          contact_email: string | null;
+          photo_urls: string[];
           created_at: string;
         };
         Insert: Partial<Database["public"]["Tables"]["leads"]["Row"]> & {
