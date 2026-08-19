@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 
 type NavSubItem = {
   href: string;
@@ -25,14 +28,30 @@ type AppShellProps = {
 };
 
 export function AppShell({ children, navItems = defaultNavItems }: AppShellProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const closeMenu = () => setMenuOpen(false);
+
   return (
     <main className="page-shell">
       <header className="topbar">
         <div className="container topbar-inner">
-          <Link className="brand" href="/">
+          <Link className="brand" href="/" onClick={closeMenu}>
             Trashd
           </Link>
-          <div className="topbar-menu">
+          <button
+            aria-controls="primary-navigation"
+            aria-expanded={menuOpen}
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            className={`nav-toggle${menuOpen ? " nav-toggle-open" : ""}`}
+            onClick={() => setMenuOpen((open) => !open)}
+            type="button"
+          >
+            <span className="nav-toggle-bar" />
+            <span className="nav-toggle-bar" />
+            <span className="nav-toggle-bar" />
+          </button>
+          <div className={`topbar-menu${menuOpen ? " topbar-menu-open" : ""}`} id="primary-navigation">
             <nav className="nav" aria-label="Primary navigation">
               {navItems.map((item) =>
                 item.items ? (
@@ -43,14 +62,14 @@ export function AppShell({ children, navItems = defaultNavItems }: AppShellProps
                     </button>
                     <div className="nav-dropdown-menu">
                       {item.items.map((sub) => (
-                        <Link className="nav-dropdown-item" href={sub.href} key={sub.href}>
+                        <Link className="nav-dropdown-item" href={sub.href} key={sub.href} onClick={closeMenu}>
                           {sub.label}
                         </Link>
                       ))}
                     </div>
                   </div>
                 ) : (
-                  <Link className="nav-link" href={item.href!} key={item.href}>
+                  <Link className="nav-link" href={item.href!} key={item.href} onClick={closeMenu}>
                     {item.label}
                   </Link>
                 )
